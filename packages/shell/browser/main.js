@@ -1,7 +1,7 @@
 const path = require('path')
 const fsSync = require('fs')
 const fs = fsSync.promises
-const { app, session, BrowserWindow, globalShortcut  } = require('electron')
+const { app, session, BrowserWindow, globalShortcut } = require('electron')
 
 const { Tabs } = require('./tabs')
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')
@@ -115,7 +115,7 @@ class TabbedBrowserWindow {
     const webuiUrl = path.join('chrome-extension://', webuiExtensionId, '/webui.html')
     this.webContents.loadURL(webuiUrl)
 
-    this.tabs = new Tabs(this.window, {newTabPageUrl: newTabUrl})
+    this.tabs = new Tabs(this.window, { newTabPageUrl: newTabUrl })
 
     const self = this
 
@@ -143,7 +143,8 @@ class TabbedBrowserWindow {
           const tab = self.tabs.create({
             initialUrl: url,
             activate: i === 0,
-            devToolsMode: url == kc3StartPageUrl ? 'bottom' : undefined})
+            devToolsMode: url == kc3StartPageUrl ? 'bottom' : undefined
+          })
           if (i === 0)
             initialTabId = tab.id
         }
@@ -201,16 +202,51 @@ class Browser {
     return window ? this.getWindowFromBrowserWindow(window) : null
   }
 
+  processes = {};
+  progressBarParent;
+  onProcessStarted(name) {
+    let process = this.processes[name]
+    if (process) throw new Error(`Process '${name}' already in progress.`);
+    this.processes[name] = new ProgressBar({
+      indeterminate: false,
+      text: name,
+      detail: 'Please wait...',
+      maxValue: 1.001, // prevent it from closing automatically when it reaches 100%
+      browserWindow: {
+        parent: this.progressBarParent
+      }
+    });
+  }
+  onProcessProgress(name, phase, current, total) {
+    let process = this.processes[name]
+    if (!process) return;
+    if (total && total >= current) {
+      const progressFormatted = new Intl.NumberFormat(undefined, { maximumSignificantDigits: 3 }).format(current / total * 100);
+      process.detail = `${phase}: ${current} of ${total} (${progressFormatted}%)...`;
+      process.value = current / total;
+    } else {
+      process.detail = 'Just a moment.';
+      process.value = 0;
+    }
+  }
+  onProcessCompleted(name) {
+    let process = this.processes[name]
+    if (!process) return;
+    process.setCompleted();
+    process.close();
+    delete this.processes[name];
+  }
+
   async init() {
     this.initSession()
     setupMenu(this)
 
     app.on("browser-window-focus", () => {
       globalShortcut.registerAll(
-          ["CommandOrControl+W"],
-          () => {
-            return;
-          }
+        ["CommandOrControl+W"],
+        () => {
+          return;
+        }
       );
     });
     app.on("browser-window-blur", () => {
@@ -271,8 +307,9 @@ class Browser {
 
     const extensionsPath = path.join(__dirname, '../../../extensions');
 
-    const win = this.createWindow({initialUrls: [newTabUrl]})
-    
+    const win = this.createWindow({ initialUrls: [newTabUrl] })
+    this.progressBarParent = win.window;
+
     const kc3Path = path.join(extensionsPath, 'kc3kai')
     const kc3SrcPath = path.join(kc3Path, 'src')
 
@@ -281,8 +318,12 @@ class Browser {
     if (!hasKc3) {
       await fs.rm(kc3Path, { recursive: true, force: true })
     }
-    
-    let kc3updater = new KC3Updater({parent: win.window})
+
+    let kc3updater = new KC3Updater({
+      onProcessStarted: this.onProcessStarted.bind(this),
+      onProcessProgress: this.onProcessProgress.bind(this),
+      onProcessCompleted: this.onProcessCompleted.bind(this)
+    })
     await kc3updater.update(kc3Path)
 
     const kc3 = await this.session.loadExtension(kc3SrcPath)
@@ -293,8 +334,8 @@ class Browser {
       kc3StartPageUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/game/direct.html'
       const kc3StratRoomUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/strategy/strategy.html'
       const selectedTab = win.tabs.selected;
-      const startTab = win.tabs.create({initialUrl: kc3StartPageUrl})
-      win.tabs.create({initialUrl: kc3StratRoomUrl})
+      const startTab = win.tabs.create({ initialUrl: kc3StartPageUrl })
+      win.tabs.create({ initialUrl: kc3StratRoomUrl })
       selectedTab.destroy()
       win.tabs.select(startTab.id)
     }
