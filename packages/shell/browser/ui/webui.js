@@ -40,9 +40,6 @@ class WebUI {
     )
     this.$.closeButton.addEventListener('click', () => chrome.windows.remove())
 
-    const platformClass = `platform-${(navigator.userAgentData.platform).toLowerCase()}`
-    document.body.classList.add(platformClass)
-
     this.initTabs()
   }
 
@@ -152,8 +149,10 @@ class WebUI {
 
     if (tab.active) {
       tabElem.dataset.active = ''
+      delete tabElem.dataset.tabPosition
     } else {
       delete tabElem.dataset.active
+      tabElem.dataset.tabPosition = tab.tabPosition
     }
 
     const favicon = tabElem.querySelector('.favicon')
@@ -168,7 +167,11 @@ class WebUI {
   }
 
   renderTabs() {
-    this.tabList.forEach((tab) => {
+    let activeFound = false
+    this.tabList.forEach(tab => {
+      activeFound = tab.active || activeFound
+      if (!tab.active)
+        tab.tabPosition = activeFound ? 'after' : 'before'
       this.renderTab(tab)
     })
   }

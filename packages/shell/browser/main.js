@@ -1,13 +1,36 @@
 const path = require('path')
-const { promises: fs } = require('fs')
-const { app, session, BrowserWindow } = require('electron')
+const fsSync = require('fs')
+const fs = fsSync.promises
+const { app, session, BrowserWindow, globalShortcut  } = require('electron')
 
 const { Tabs } = require('./tabs')
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 const { setupMenu } = require('./menu')
 const { buildChromeContextMenu } = require('electron-chrome-context-menu')
 
+const git = require('isomorphic-git');
+const http = require('isomorphic-git/http/node');
+const ProgressBar = require('electron-progressbar');
+const { KC3Updater } = require("./kc3updater.js")
+
+app.commandLine.appendSwitch("force-gpu-mem-available-mb", "10000")
+app.commandLine.appendSwitch("force-gpu-rasterization")
+app.commandLine.appendSwitch("enable-native-gpu-memory-buffers")
+app.commandLine.appendSwitch("enable-gpu-memory-buffer-compositor-resources")
+
+
+if (process.execPath.match(/(damecon(-browser)?|chrome)/)) {
+  currPath = path.dirname(process.execPath)
+  let p = path.join(currPath, 'userdata')
+  app.setPath('userData', p)
+} else {
+  // app.commandLine.appendSwitch('proxy-server', '192.168.0.123:1235')
+}
+
 let webuiExtensionId
+let kc3ExtensionId
+let kc3StartPageUrl
+let newTabUrl
 
 const manifestExists = async (dirPath) => {
   if (!dirPath) return false
@@ -52,7 +75,7 @@ async function loadExtensions(session, extensionsPath) {
   const results = []
 
   for (const extPath of extensionDirectories.filter(Boolean)) {
-    console.log(`Loading extension from ${extPath}`)
+    //console.log(`Loading extension from ${extPath}`)
     try {
       const extensionInfo = await session.loadExtension(extPath)
       results.push(extensionInfo)
@@ -92,15 +115,19 @@ class TabbedBrowserWindow {
     const webuiUrl = path.join('chrome-extension://', webuiExtensionId, '/webui.html')
     this.webContents.loadURL(webuiUrl)
 
-    this.tabs = new Tabs(this.window)
+    this.tabs = new Tabs(this.window, {newTabPageUrl: newTabUrl})
 
     const self = this
 
-    this.tabs.on('tab-created', function onTabCreated(tab) {
-      if (options.initialUrl) tab.webContents.loadURL(options.initialUrl)
-
+    this.tabs.on('tab-created', function onTabCreated(tab, url) {
       // Track tab that may have been created outside of the extensions API.
       self.extensions.addTab(tab.webContents, tab.window)
+    })
+
+    this.tabs.on('tab-navigated', function onTabNavigated(tab, url) {
+      if (url === kc3StartPageUrl) {
+        tab.webContents.openDevTools({ mode: 'bottom', activate: true })
+      }
     })
 
     this.tabs.on('tab-selected', function onTabSelected(tab) {
@@ -109,7 +136,19 @@ class TabbedBrowserWindow {
 
     queueMicrotask(() => {
       // Create initial tab
-      this.tabs.create()
+      if (options.initialUrls) {
+        let initialTabId
+        for (let i = 0; i < options.initialUrls.length; i++) {
+          const url = options.initialUrls[i]
+          const tab = self.tabs.create({
+            initialUrl: url,
+            activate: i === 0,
+            devToolsMode: url == kc3StartPageUrl ? 'bottom' : undefined})
+          if (i === 0)
+            initialTabId = tab.id
+        }
+        this.tabs.select(initialTabId)
+      }
     })
   }
 
@@ -166,6 +205,18 @@ class Browser {
     this.initSession()
     setupMenu(this)
 
+    app.on("browser-window-focus", () => {
+      globalShortcut.registerAll(
+          ["CommandOrControl+W"],
+          () => {
+            return;
+          }
+      );
+    });
+    app.on("browser-window-blur", () => {
+      globalShortcut.unregisterAll();
+    });
+
     const browserPreload = path.join(__dirname, '../preload.js')
     this.session.setPreloads([browserPreload])
 
@@ -183,6 +234,7 @@ class Browser {
 
         const tab = win.tabs.create()
 
+
         if (details.url) tab.loadURL(details.url || newTabUrl)
         if (typeof details.active === 'boolean' ? details.active : true) win.tabs.select(tab.id)
 
@@ -198,9 +250,7 @@ class Browser {
       },
 
       createWindow: (details) => {
-        const win = this.createWindow({
-          initialUrl: details.url || newTabUrl,
-        })
+        const win = this.createWindow(details)
         // if (details.active) tabs.select(tab.id)
         return win.window
       },
@@ -217,14 +267,37 @@ class Browser {
     const webuiExtension = await this.session.loadExtension(path.join(__dirname, 'ui'))
     webuiExtensionId = webuiExtension.id
 
-    const newTabUrl = path.join('chrome-extension://', webuiExtensionId, 'new-tab.html')
+    newTabUrl = 'chrome-extension://' + webuiExtensionId + '/new-tab.html'
 
-    const installedExtensions = await loadExtensions(
-      this.session,
-      path.join(__dirname, '../../../extensions')
-    )
+    const extensionsPath = path.join(__dirname, '../../../extensions');
 
-    this.createWindow({ initialUrl: newTabUrl })
+    const win = this.createWindow({initialUrls: [newTabUrl]})
+    
+    const kc3Path = path.join(extensionsPath, 'kc3kai')
+    const kc3SrcPath = path.join(kc3Path, 'src')
+
+    let hasKc3 = fsSync.existsSync(kc3SrcPath);
+
+    if (!hasKc3) {
+      await fs.rm(kc3Path, { recursive: true, force: true })
+    }
+    
+    let kc3updater = new KC3Updater({parent: win.window})
+    await kc3updater.update(kc3Path)
+
+    const kc3 = await this.session.loadExtension(kc3SrcPath)
+    const installedExtensions = await loadExtensions(this.session, extensionsPath)
+    if (kc3) {
+      console.log('KC3Kai loaded!')
+      kc3ExtensionId = kc3.id
+      kc3StartPageUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/game/direct.html'
+      const kc3StratRoomUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/strategy/strategy.html'
+      const selectedTab = win.tabs.selected;
+      const startTab = win.tabs.create({initialUrl: kc3StartPageUrl})
+      win.tabs.create({initialUrl: kc3StratRoomUrl})
+      selectedTab.destroy()
+      win.tabs.select(startTab.id)
+    }
   }
 
   initSession() {
@@ -243,22 +316,13 @@ class Browser {
       ...options,
       extensions: this.extensions,
       window: {
-        width: 1280,
-        height: 720,
+        width: 1000,
+        height: 1101,
         frame: false,
-        titleBarStyle: 'hidden',
-        titleBarOverlay: {
-          height: 31,
-          color: '#39375b',
-          symbolColor: '#ffffff',
-        },
         webPreferences: {
-          sandbox: true,
-          nodeIntegration: false,
-          enableRemoteModule: false,
           contextIsolation: true,
-          worldSafeExecuteJavaScript: true,
         },
+        icon: path.join(__dirname, 'icon.ico')
       },
     })
     this.windows.push(win)
@@ -273,9 +337,9 @@ class Browser {
   async onWebContentsCreated(event, webContents) {
     const type = webContents.getType()
     const url = webContents.getURL()
-    console.log(`'web-contents-created' event [type:${type}, url:${url}]`)
+    // console.log(`'web-contents-created' event [type:${type}, url:${url}]`)
 
-    if (process.env.SHELL_DEBUG && ['backgroundPage', 'remote'].includes(webContents.getType())) {
+    if (process.env.SHELL_DEBUG && webContents.getType() === 'backgroundPage') {
       webContents.openDevTools({ mode: 'detach', activate: true })
     }
 
@@ -290,8 +354,9 @@ class Browser {
           // https://github.com/electron/electron/issues/33383
           queueMicrotask(() => {
             const win = this.getWindowFromWebContents(webContents)
-            const tab = win.tabs.create()
-            tab.loadURL(details.url)
+            // don't open a tab by default
+            //const tab = win.tabs.create()
+            //tab.loadURL(details.url)
           })
 
           return { action: 'deny' }

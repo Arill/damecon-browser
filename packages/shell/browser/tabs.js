@@ -61,10 +61,12 @@ class Tab {
 class Tabs extends EventEmitter {
   tabList = []
   selected = null
+  newTabPageUrl = null
 
-  constructor(browserWindow) {
+  constructor(browserWindow, options) {
     super()
     this.window = browserWindow
+    this.newTabPageUrl = options.newTabPageUrl ?? 'about:blank'
   }
 
   destroy() {
@@ -83,12 +85,18 @@ class Tabs extends EventEmitter {
     return this.tabList.find((tab) => tab.id === tabId)
   }
 
-  create() {
+  create(options) {
     const tab = new Tab(this.window)
     this.tabList.push(tab)
     if (!this.selected) this.selected = tab
     tab.show() // must be attached to window
-    this.emit('tab-created', tab)
+    
+    const url = options?.initialUrl ?? this.newTabPageUrl
+    tab.webContents.loadURL(url)
+    tab.webContents.on('did-navigate', (origin, targets) => {
+      this.emit('tab-navigated', tab, url)
+    })
+    this.emit('tab-created', tab, url)
     this.select(tab.id)
     return tab
   }

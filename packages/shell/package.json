@@ -6,17 +6,76 @@
   "scripts": {
     "build": "webpack",
     "start": "electron .",
-    "test": "npm run build"
+    "test": "npm run build",
+    "dist": "webpack && electron-builder",
+    "dist-linux": "webpack && electron-builder --linux",
+    "dist-mac": "webpack && electron-builder --mac"
   },
   "license": "GPL-3.0",
-  "author": "Samuel Maddock <sam@samuelmaddock.com>",
+  "author": "Chami <planetarian@users.noreply.github.com>",
   "private": true,
   "dependencies": {
-    "electron": "^25.0.1",
     "electron-chrome-context-menu": "^1.0.1",
-    "electron-chrome-extensions": "^3.10.1"
+    "electron-chrome-extensions": "^3.10.1",
+    "electron-progressbar": "^2.2.1",
+    "isomorphic-git": "^1.27.1"
   },
   "devDependencies": {
-    "cross-env": "^7.0.2"
+    "cross-env": "^7.0.2",
+    "electron": "25.9.8",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "productName": "Damecon",
+    "appId": "damecon-browser",
+    "artifactName": "${productName}-${version}-${os}.${ext}",
+    "directories": {
+      "output": "build"
+    },
+    "files": [
+      "*.js",
+      "*.ts",
+      "browser",
+      "icon.ico"
+    ],
+    "extraFiles": [],
+    "win": {
+      "artifactName": "${productName}-${version}-${os}.${ext}",
+      "executableName": "damecon-browser",
+      "icon": "icon.ico",
+      "target": [
+        {
+          "target": "7z",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "linux": {
+      "icon": "icon.ico",
+      "target": [
+        {
+          "target": "7z",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "mac": {
+      "icon": "icon.ico",
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "asar": false,
+    "afterPack": "./script/after.js",
+    "compression": "maximum"
   }
 }

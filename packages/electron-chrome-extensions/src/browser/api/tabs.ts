@@ -6,16 +6,30 @@ import { WindowsAPI } from './windows'
 
 const debug = require('debug')('electron-chrome-extensions:tabs')
 
-const validateExtensionUrl = (url: string, extension: Electron.Extension) => {
-  // Convert relative URLs to absolute if needed
+function isValidHttpUrl(input: string) {
+  let url;
   try {
-    url = new URL(url, extension.url).href
+    url = new URL(input);
+  } catch (e) {
+    return false;
+  }
+  return url.protocol === "http:" || url.protocol === "https:";
+}
+
+const validateExtensionUrl = (url: string, extension: Electron.Extension) => {
+  // Add HTTP protocol if needed
+  try {
+    if (extension.name === 'WebUI' && !url.startsWith('chrome-extension://') && !url.startsWith('chrome:') && (!isValidHttpUrl(url))) {
+      url = "http://" + url
+    } else {
+      url = new URL(url, extension.url).href
+    }
   } catch (e) {
     throw new Error('Invalid URL')
   }
 
   // Prevent creating chrome://kill or other debug commands
-  if (url.startsWith('chrome:') || url.startsWith('javascript:')) {
+  if (url.startsWith('javascript:')) {
     throw new Error('Invalid URL')
   }
 
@@ -154,7 +168,7 @@ export class TabsAPI {
   }
 
   private getCurrent(event: ExtensionEvent) {
-    const tab = this.ctx.store.getActiveTabOfCurrentWindow()
+    const tab = this.ctx.store.getActiveTabFromWebContents(event.sender)
     return tab ? this.getTabDetails(tab) : undefined
   }
 
@@ -236,7 +250,8 @@ export class TabsAPI {
 
     const tab = tabId
       ? this.ctx.store.getTabById(tabId)
-      : this.ctx.store.getActiveTabOfCurrentWindow()
+      : this.ctx.store.getActiveTabFromWebContents(event.sender)
+
     if (!tab) return
 
     if (reloadProperties?.bypassCache) {
@@ -253,7 +268,7 @@ export class TabsAPI {
 
     const tab = tabId
       ? this.ctx.store.getTabById(tabId)
-      : this.ctx.store.getActiveTabOfCurrentWindow()
+      : this.ctx.store.getActiveTabFromWebContents(event.sender)
     if (!tab) return
 
     tabId = tab.id
@@ -286,7 +301,7 @@ export class TabsAPI {
     const tabId = typeof arg1 === 'number' ? arg1 : undefined
     const tab = tabId
       ? this.ctx.store.getTabById(tabId)
-      : this.ctx.store.getActiveTabOfCurrentWindow()
+      : this.ctx.store.getActiveTabFromWebContents(event.sender)
     if (!tab) return
     tab.goForward()
   }
@@ -295,7 +310,7 @@ export class TabsAPI {
     const tabId = typeof arg1 === 'number' ? arg1 : undefined
     const tab = tabId
       ? this.ctx.store.getTabById(tabId)
-      : this.ctx.store.getActiveTabOfCurrentWindow()
+      : this.ctx.store.getActiveTabFromWebContents(event.sender)
     if (!tab) return
     tab.goBack()
   }
