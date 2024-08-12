@@ -97,14 +97,12 @@ class KC3Updater {
             const kc3FetchProcess = self.newProcess('Checking for new commits');
             let result = await git.fetch({ fs, http, dir, onProgress: kc3FetchProcess.progress.bind(kc3FetchProcess) });
             kc3FetchProcess.complete();
-            console.log(result);
 
             updateProgress();
 
             // Update branch list
             console.log('Fetching branch list...');
             let branches = await git.listBranches({ fs, dir, remote: 'origin' });
-            console.log(branches);
 
             updateProgress();
 
