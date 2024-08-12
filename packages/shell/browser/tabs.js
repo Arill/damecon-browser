@@ -62,11 +62,13 @@ class Tabs extends EventEmitter {
   tabList = []
   selected = null
   newTabPageUrl = null
+  hidden = false
 
   constructor(browserWindow, options) {
     super()
     this.window = browserWindow
     this.newTabPageUrl = options.newTabPageUrl ?? 'about:blank'
+    this.hidden = options?.hidden ?? false
   }
 
   destroy() {
@@ -88,8 +90,8 @@ class Tabs extends EventEmitter {
   create(options) {
     const tab = new Tab(this.window)
     this.tabList.push(tab)
-    if (!this.selected) this.selected = tab
-    tab.show() // must be attached to window
+    if (!this.selected)
+      this.selected = tab
     
     const url = options?.initialUrl ?? this.newTabPageUrl
     tab.webContents.loadURL(url)
@@ -123,10 +125,24 @@ class Tabs extends EventEmitter {
   select(tabId) {
     const tab = this.get(tabId)
     if (!tab) return
-    if (this.selected) this.selected.hide()
-    tab.show()
+    if (this.selected)
+      this.selected.hide()
+    if (!this.hidden)
+      tab.show()
     this.selected = tab
     this.emit('tab-selected', tab)
+  }
+
+  hide() {
+    this.hidden = true
+    if (!this.selected) return
+    this.selected.hide()
+  }
+
+  show() {
+    this.hidden = false
+    if (!this.selected) return
+    this.selected.show()
   }
 }
 
