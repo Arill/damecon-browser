@@ -26,6 +26,15 @@ class WebUI {
     
     ipc.on('webui-message', (ev, data) => {
       //alert(JSON.stringify(data))
+      if (data.key === 'tabs-hidden') {
+        if (data.value == true) {
+          this.$.tabList.classList.add('hidden')
+        }
+        else {
+          this.$.tabList.classList.remove('hidden')
+        }
+      }
+      //alert(JSON.stringify(data))
     })
 
 

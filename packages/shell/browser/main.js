@@ -143,7 +143,7 @@ class TabbedBrowserWindow {
     })
 
     this.tabs.on('tabs-hidden', function onTabsHidden(hidden) {
-      //self.webContents.send('tabs-hidden', hidden)
+      self.webContents.send('webui-message', {key: 'tabs-hidden', value: hidden})
     })
 
     queueMicrotask(() => {
@@ -325,7 +325,7 @@ class Browser {
     // initial window creation
     newTabUrl = 'chrome-extension://' + webuiExtensionId + '/new-tab.html'
     const win = this.createWindow({ initialUrls: [newTabUrl] })
-    //win.webContents.send('webui-message', 'hi from main')
+    win.webContents.send('webui-message', {key: 'tabs-hidden', value: win.tabs.hidden})
 
     const extensionsPath = path.join(__dirname, '../../../extensions')
     const kc3Path = path.join(extensionsPath, 'kc3kai')

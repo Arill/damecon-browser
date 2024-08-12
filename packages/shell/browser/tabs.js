@@ -137,12 +137,14 @@ class Tabs extends EventEmitter {
     this.hidden = true
     if (!this.selected) return
     this.selected.hide()
+    this.emit('tabs-hidden', true)
   }
 
   show() {
     this.hidden = false
     if (!this.selected) return
     this.selected.show()
+    this.emit('tabs-hidden', false)
   }
 }
 
