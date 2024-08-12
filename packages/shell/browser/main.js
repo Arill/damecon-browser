@@ -2,16 +2,24 @@ const path = require('path')
 const fsSync = require('fs')
 const fs = fsSync.promises
 const { app, session, BrowserWindow, globalShortcut } = require('electron')
+const ConfigStore = require('configstore')
 
 const { Tabs } = require('./tabs')
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 const { setupMenu } = require('./menu')
 const { buildChromeContextMenu } = require('electron-chrome-context-menu')
-
-const git = require('isomorphic-git');
-const http = require('isomorphic-git/http/node');
-const ProgressBar = require('electron-progressbar');
 const { KC3Updater } = require("./kc3updater.js")
+
+const packageJson = JSON.parse(fsSync.readFileSync('../../package.json', 'utf8'));
+const defaultConfig = {
+  window: {
+    state: {
+      width: 1200,
+      height: 800
+    }
+  }
+}
+const config = new ConfigStore(packageJson.name, {}, {globalConfigPath: true});
 
 app.commandLine.appendSwitch("force-gpu-mem-available-mb", "10000")
 app.commandLine.appendSwitch("force-gpu-rasterization")
@@ -31,7 +39,6 @@ let webuiExtensionId
 let kc3ExtensionId
 let kc3StartPageUrl
 let newTabUrl
-
 const manifestExists = async (dirPath) => {
   if (!dirPath) return false
   const manifestPath = path.join(dirPath, 'manifest.json')
@@ -203,8 +210,9 @@ class Browser {
   }
 
   processes = {};
-  progressBarParent;
   onProcessStarted(name) {
+    console.log(`Process started: ${name}`)
+    /*
     let process = this.processes[name]
     if (process) throw new Error(`Process '${name}' already in progress.`);
     this.processes[name] = new ProgressBar({
@@ -215,26 +223,36 @@ class Browser {
       browserWindow: {
         parent: this.progressBarParent
       }
-    });
+    });/**/
   }
   onProcessProgress(name, phase, current, total) {
+    if (total && total >= current) {
+      const progressFormatted = new Intl.NumberFormat(undefined, { maximumSignificantDigits: 3 }).format(current / total * 100);
+      console.log(`Process progress: ${name} - ${current}/${total} (${progressFormatted}%)`)
+    }
+    else {
+      console.log(`Process progress: ${name} - waiting...`)
+    }
+    /*
     let process = this.processes[name]
     if (!process) return;
     if (total && total >= current) {
-      const progressFormatted = new Intl.NumberFormat(undefined, { maximumSignificantDigits: 3 }).format(current / total * 100);
       process.detail = `${phase}: ${current} of ${total} (${progressFormatted}%)...`;
       process.value = current / total;
     } else {
       process.detail = 'Just a moment.';
       process.value = 0;
-    }
+    }/**/
   }
   onProcessCompleted(name) {
+    console.log(`Process completed: ${name}`)
+    /*
     let process = this.processes[name]
     if (!process) return;
     process.setCompleted();
     process.close();
     delete this.processes[name];
+    /**/
   }
 
   async init() {
@@ -242,12 +260,7 @@ class Browser {
     setupMenu(this)
 
     app.on("browser-window-focus", () => {
-      globalShortcut.registerAll(
-        ["CommandOrControl+W"],
-        () => {
-          return;
-        }
-      );
+      globalShortcut.registerAll(["CommandOrControl+W"], () => { return; });
     });
     app.on("browser-window-blur", () => {
       globalShortcut.unregisterAll();
@@ -300,43 +313,54 @@ class Browser {
       this.popup = popup
     })
 
+    // extension containing window chrome UI
     const webuiExtension = await this.session.loadExtension(path.join(__dirname, 'ui'))
     webuiExtensionId = webuiExtension.id
-
+    
+    // initial window creation
     newTabUrl = 'chrome-extension://' + webuiExtensionId + '/new-tab.html'
-
-    const extensionsPath = path.join(__dirname, '../../../extensions');
-
     const win = this.createWindow({ initialUrls: [newTabUrl] })
-    this.progressBarParent = win.window;
 
+    const extensionsPath = path.join(__dirname, '../../../extensions')
     const kc3Path = path.join(extensionsPath, 'kc3kai')
-    const kc3SrcPath = path.join(kc3Path, 'src')
 
-    let hasKc3 = fsSync.existsSync(kc3SrcPath);
+    await this.updateKc3(kc3Path);
+    await this.checkStartKc3(win, extensionsPath, kc3Path);
 
-    if (!hasKc3) {
-      await fs.rm(kc3Path, { recursive: true, force: true })
-    }
+  }
 
+  async updateKc3(kc3Path) {
     let kc3updater = new KC3Updater({
       onProcessStarted: this.onProcessStarted.bind(this),
       onProcessProgress: this.onProcessProgress.bind(this),
       onProcessCompleted: this.onProcessCompleted.bind(this)
     })
     await kc3updater.update(kc3Path)
+  }
 
+  async checkStartKc3(win, extensionsPath, kc3Path) {
+    const kc3SrcPath = path.join(kc3Path, 'src')
+
+    // once we're updated and kc3 is loaded, remove the default new tab page
+    // and open the kc3 start page + strat room
     const kc3 = await this.session.loadExtension(kc3SrcPath)
     const installedExtensions = await loadExtensions(this.session, extensionsPath)
     if (kc3) {
       console.log('KC3Kai loaded!')
+
+      // store the initial tab so we can remove it
+      const initialTab = win.tabs.selected;
+
+      // open KC3 start page
       kc3ExtensionId = kc3.id
       kc3StartPageUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/game/direct.html'
-      const kc3StratRoomUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/strategy/strategy.html'
-      const selectedTab = win.tabs.selected;
       const startTab = win.tabs.create({ initialUrl: kc3StartPageUrl })
+      
+      // TODO: make strat room auto-open optional
+      const kc3StratRoomUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/strategy/strategy.html'
       win.tabs.create({ initialUrl: kc3StratRoomUrl })
-      selectedTab.destroy()
+
+      initialTab.destroy()
       win.tabs.select(startTab.id)
     }
   }
@@ -353,19 +377,29 @@ class Browser {
   }
 
   createWindow(options) {
+    const windowState = config.get('window.state');
+    console.log(windowState);
+
     const win = new TabbedBrowserWindow({
       ...options,
       extensions: this.extensions,
       window: {
-        width: 1000,
-        height: 1101,
+        width: windowState?.width || defaultConfig.window.state.width,
+        height: windowState?.height || defaultConfig.window.state.height,
         frame: false,
         webPreferences: {
-          contextIsolation: true,
+          contextIsolation: true
+          //, enableRemoteModule: true
         },
         icon: path.join(__dirname, 'icon.ico')
       },
     })
+    win.window.on('resize', () => {
+      const size = win.window.getSize()
+      config.set('window.state.width', size[0]);
+      config.set('window.state.height', size[1]);
+    })
+
     this.windows.push(win)
 
     if (process.env.SHELL_DEBUG) {
