@@ -1,3 +1,5 @@
+
+
 class WebUI {
   windowId = -1
   activeTabId = -1
@@ -21,6 +23,11 @@ class WebUI {
       maximizeButton: $('#maximize'),
       closeButton: $('#close'),
     }
+    
+    ipc.on('webui-message', (ev, data) => {
+      //alert(JSON.stringify(data))
+    })
+
 
     this.$.createTabButton.addEventListener('click', () => chrome.tabs.create())
     this.$.goBackButton.addEventListener('click', () => chrome.tabs.goBack())
