@@ -159,8 +159,7 @@ class KC3Updater {
                         dir: langDir,
                         onProgress: tlPullProcess.progress.bind(tlPullProcess),
                         url: 'https://github.com/kc3kai/kc3-translations',
-                        ref: tlOid,
-                        depth: 1
+                        ref: tlOid
                     });
                     tlPullProcess.complete();
                 } // pull lang
