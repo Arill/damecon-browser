@@ -228,7 +228,7 @@ class Browser {
   onProcessProgress(name, phase, current, total) {
     if (total && total >= current) {
       const progressFormatted = new Intl.NumberFormat(undefined, { maximumSignificantDigits: 3 }).format(current / total * 100);
-      console.log(`Process progress: ${name} - ${current}/${total} (${progressFormatted}%)`)
+      console.log(`Process progress: ${name} (${phase}) - ${current}/${total} (${progressFormatted}%)`)
     }
     else {
       console.log(`Process progress: ${name} - waiting...`)
