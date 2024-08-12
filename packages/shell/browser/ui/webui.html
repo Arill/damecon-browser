@@ -44,10 +44,16 @@
         list-style: none;
       }
 
-      .topbar {
+      #topbar {
         background: var(--bg-color);
         height: 2rem;
         overflow-x: clip; /* don't scroll for the oversized tabstrip shadower */
+      }
+
+      #topbar.tabui-hidden .toolbar,
+      #topbar.tabui-hidden .tab-list,
+      #topbar.tabui-hidden #createtab {
+        display: none;
       }
 
       /*----- TABS -----*/
@@ -69,10 +75,6 @@
         box-shadow: inset 0 0 4px 0 #0000007f;
         bottom: 0;
         pointer-events: none;
-      }
-
-      #tabstrip .tab-list.hidden {
-        display: none;
       }
 
       .tab-list {
@@ -111,6 +113,25 @@
         width: 12rem;
       }
 
+      .tab-container.tab-compact {
+        width: 44px;
+      }
+
+      .app-tab-container {
+        padding-left: 6px;
+        display: flex;
+      }
+
+      .app-tab.tab-container {
+      }
+
+      .app-icon {
+        background-image: url('damecon_icon_48.png');
+        background-size: 16px 16px;
+        background-repeat: no-repeat;
+        background-position: center;
+      }
+
       .tab {
         padding: 0.2rem 0.4rem;
         border-radius: 4px 4px 0 0;
@@ -124,12 +145,12 @@
       }
 
       .tab:hover {
-        background: var(--control-hover-bg-color);
+        background-color: var(--control-hover-bg-color);
         z-index: 2;
       }
 
       .tab-container[data-active] .tab {
-        background: var(--tab-color);
+        background-color: var(--tab-color);
         z-index: 2;
       }
       .tab-container::after {
@@ -180,7 +201,7 @@
       }
 
       .tab .controls .control {
-        background: rgba(0,0,0,0);
+        background-color: rgba(0,0,0,0);
         border: none;
         border-radius: 20%;
         padding: 0;
@@ -198,25 +219,14 @@
       }
 
       .tab .controls .control.close:hover {
-        background: var(--control-hover-bg-color);
+        background-color: var(--control-hover-bg-color);
       }
 
       .tab .controls .control:disabled {
         display: none;
       }
 
-      .app-icon {
-        background: url('damecon_icon_48.png');
-        width: 24px;
-        margin-left: 6px;
-        margin-bottom: 2px;
-        margin-right: 6px;
-        background-size: 22px 22px;
-        background-repeat: no-repeat;
-        background-position: center;
-      }
-
-      .app-drag, .app-icon {
+      .app-drag {
         -webkit-app-region: drag;
         height: calc(100% - 5px);
         min-width: 1rem;
@@ -312,12 +322,22 @@
       browser-action-list::part(action):hover {
         background-color: var(--control-hover-bg-color);
       }
+
+      #settings {
+        background-color: var(--tab-color)
+        
+      }
+
     </style>
   </head>
   <body>
-    <div class="topbar">
+    <div id="topbar">
       <div id="tabstrip">
-        <div class="app-icon"></div>
+        <div class="app-tab-container">
+          <div class="tab-container tab-compact app-tab">
+            <div class="app-icon tab"></div>
+          </div>
+        </div>
         <ul class="tab-list">
           <template id="tabtemplate">
             <li class="tab-container">
@@ -358,6 +378,7 @@
       </div>
     </div>
   </div>
+  <div id="settings"></div>
   <script src="./webui.js"></script>
   </body>
 </html>

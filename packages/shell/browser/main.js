@@ -1,7 +1,7 @@
 const path = require('path')
 const fsSync = require('fs')
 const fs = fsSync.promises
-const { app, session, BrowserWindow, globalShortcut } = require('electron')
+const { app, session, BrowserWindow, globalShortcut, ipcMain } = require('electron')
 const ConfigStore = require('configstore')
 
 const { Tabs } = require('./tabs')
@@ -121,8 +121,9 @@ class TabbedBrowserWindow {
 
     const webuiUrl = path.join('chrome-extension://', webuiExtensionId, '/webui.html')
     this.webContents.loadURL(webuiUrl)
+    this.webContents.openDevTools({mode: 'right'})
 
-    this.tabs = new Tabs(this.window, { newTabPageUrl: newTabUrl, hidden: true })
+    this.tabs = new Tabs(this.window, { newTabPageUrl: newTabUrl })
 
 
     const self = this
@@ -161,6 +162,13 @@ class TabbedBrowserWindow {
             initialTabId = tab.id
         }
         this.tabs.select(initialTabId)
+      }
+      else {
+        const tab = self.tabs.create({
+          initialUrl: newTabUrl,
+          activate: true,
+        })
+        this.tabs.select(tab.id)
       }
     })
   }
@@ -325,13 +333,22 @@ class Browser {
     // initial window creation
     newTabUrl = 'chrome-extension://' + webuiExtensionId + '/new-tab.html'
     const win = this.createWindow({ initialUrls: [newTabUrl] })
+    ipcMain.handle('webui-message', (ev, data) => {
+      if (data.key == 'appicon-active') {
+        if (data.value) win.tabs.hide()
+        else win.tabs.show()
+      }
+      console.log(data)
+    })
     win.webContents.send('webui-message', {key: 'tabs-hidden', value: win.tabs.hidden})
+    
+    if (false) {
+      const extensionsPath = path.join(__dirname, '../../../extensions')
+      const kc3Path = path.join(extensionsPath, 'kc3kai')
 
-    const extensionsPath = path.join(__dirname, '../../../extensions')
-    const kc3Path = path.join(extensionsPath, 'kc3kai')
-
-    await this.updateKc3(kc3Path);
-    await this.checkStartKc3(win, extensionsPath, kc3Path);
+      await this.updateKc3(kc3Path);
+      await this.checkStartKc3(win, extensionsPath, kc3Path);
+    }
 
     win.tabs.show()
   }

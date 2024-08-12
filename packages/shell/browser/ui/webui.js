@@ -9,6 +9,8 @@ class WebUI {
     const $ = document.querySelector.bind(document)
 
     this.$ = {
+      topBar: $('#topbar'),
+      appIcon: $('.app-tab'),
       tabList: $('#tabstrip .tab-list'),
       tabTemplate: $('#tabtemplate'),
       createTabButton: $('#createtab'),
@@ -25,16 +27,15 @@ class WebUI {
     }
     
     ipc.on('webui-message', (ev, data) => {
-      //alert(JSON.stringify(data))
       if (data.key === 'tabs-hidden') {
         if (data.value == true) {
-          this.$.tabList.classList.add('hidden')
+          this.$.topBar.classList.add('tabui-hidden')
         }
         else {
-          this.$.tabList.classList.remove('hidden')
+          this.$.topBar.classList.remove('tabui-hidden')
         }
       }
-      //alert(JSON.stringify(data))
+      else alert('webui.js received unknown webui-message:\n' + JSON.stringify(data))
     })
 
 
@@ -55,6 +56,14 @@ class WebUI {
       })
     )
     this.$.closeButton.addEventListener('click', () => chrome.windows.remove())
+
+    this.$.appIcon.addEventListener('click', async () => {
+      const ds = this.$.appIcon.dataset
+      const active = ds.active === ''
+      if (active) delete ds.active
+      else ds.active = ''
+      await ipc.send('webui-message', {key: 'appicon-active', value: !active})
+    })
 
     this.initTabs()
   }
