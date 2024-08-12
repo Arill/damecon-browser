@@ -328,6 +328,7 @@ class Browser {
     await this.updateKc3(kc3Path);
     await this.checkStartKc3(win, extensionsPath, kc3Path);
 
+    win.tabs.show()
   }
 
   async updateKc3(kc3Path) {
