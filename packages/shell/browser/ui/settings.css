@@ -1,0 +1,61 @@
+#root {
+    display: flex;
+    flex-direction: row;
+    background-color: var(--tab-color);
+}
+
+#settings-menu {
+    width: 100px;
+    padding-left: 6px;
+}
+
+#settings-menu .menu-header * {
+    text-align: center;
+}
+
+#settings-menu .menu-items {
+    display: flex;
+    flex-direction: column;
+    flex: 0 1 auto;
+    width: 100%;
+    gap: 8px;
+}
+
+#settings-menu .menu-item {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 10px 20px;
+}
+
+#settings-menu .menu-item:hover {
+    background-color: var(--control-hover-bg-color);
+}
+
+#settings-menu .menu-item[data-active] {
+    background-color: var(--mid-color);
+}
+
+#settings-menu .menu-item .icon,
+#settings-menu .menu-item .icon img,
+#settings-menu .menu-item .icon i
+ {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    width: 48px;
+    font-size: 34pt;
+}
+
+#settings-container {
+    flex: 1 1 auto;
+    background-color: white;
+    border-radius: 6px;
+    margin: 6px;
+    padding: 8px;
+    color: var(--text-color-light);
+}

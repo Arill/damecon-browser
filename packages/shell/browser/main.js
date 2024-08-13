@@ -8,7 +8,7 @@ const { Tabs } = require('./tabs')
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 const { setupMenu } = require('./menu')
 const { buildChromeContextMenu } = require('electron-chrome-context-menu')
-const { KC3Updater } = require("./kc3updater.js")
+const { KC3Updater } = require('./kc3updater.js')
 
 const packageJson = JSON.parse(fsSync.readFileSync('../../package.json', 'utf8'));
 const defaultConfig = {
@@ -144,7 +144,7 @@ class TabbedBrowserWindow {
     })
 
     this.tabs.on('tabs-hidden', function onTabsHidden(hidden) {
-      self.webContents.send('webui-message', {key: 'tabs-hidden', value: hidden})
+      self.webContents.send('webui-message', {message: 'tabs-hidden', value: hidden})
     })
 
     queueMicrotask(() => {
@@ -331,16 +331,30 @@ class Browser {
     webuiExtensionId = webuiExtension.id
     
     // initial window creation
-    newTabUrl = 'chrome-extension://' + webuiExtensionId + '/new-tab.html'
+    const webuiBase = 'chrome-extension://' + webuiExtensionId
+    newTabUrl = webuiBase + '/new-tab.html'
     const win = this.createWindow({ initialUrls: [newTabUrl] })
-    ipcMain.handle('webui-message', (ev, data) => {
-      if (data.key == 'appicon-active') {
-        if (data.value) win.tabs.hide()
-        else win.tabs.show()
+    ipcMain.handle('webui-message', (ev, message, data) => {
+      console.log('main.js received message', message, data)
+      // clicked the app icon for settings menu
+      if (message == 'appicon-active') {
+        if (data.value) {
+          win.tabs.hide()
+        } else {
+          win.tabs.show()
+        }
       }
-      console.log(data)
+      else if (message == 'get-config-item') {
+        return config.get(data.value);
+      }
+      else if (message == 'get-config') {
+        return config.all;
+      }
+      else if (message == 'set-config-item') {
+        return config.set();
+      }
     })
-    win.webContents.send('webui-message', {key: 'tabs-hidden', value: win.tabs.hidden})
+    win.webContents.send('webui-message', {message: 'tabs-hidden', value: win.tabs.hidden})
     
     if (false) {
       const extensionsPath = path.join(__dirname, '../../../extensions')

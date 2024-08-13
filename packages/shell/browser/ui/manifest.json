@@ -2,5 +2,6 @@
   "name": "WebUI",
   "version": "1.0.0",
   "manifest_version": 2,
-  "permissions": []
+  "permissions": [],
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
 }

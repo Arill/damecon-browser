@@ -1,5 +1,3 @@
-
-
 class WebUI {
   windowId = -1
   activeTabId = -1
@@ -27,7 +25,7 @@ class WebUI {
     }
     
     ipc.on('webui-message', (ev, data) => {
-      if (data.key === 'tabs-hidden') {
+      if (data.message === 'tabs-hidden') {
         if (data.value == true) {
           this.$.topBar.classList.add('tabui-hidden')
         }
@@ -62,10 +60,35 @@ class WebUI {
       const active = ds.active === ''
       if (active) delete ds.active
       else ds.active = ''
-      await ipc.send('webui-message', {key: 'appicon-active', value: !active})
+      await ipc.send('webui-message', 'appicon-active', {value: !active})
     })
 
     this.initTabs()
+
+    chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+      (async () => {
+        console.log('webui.js received message', request)
+        let result;
+        try {
+          if (request.message === 'get-config') {
+            result = await ipc.send('webui-message', 'get-config');
+          }
+          else if (request.message === 'get-config-item') {
+            result = await ipc.send('webui-message', 'get-config-item', {key: request.key});
+          }
+          else if (request.message === 'set-config-item') {
+            result = await ipc.send('webui-message', 'set-config-item', {key: request.key, value: request.value});
+          }
+          else throw new Error(`Unknown message type ${request.message || '(none)'}`);
+          
+          sendResponse({result, complete: true});
+        }
+        catch (err) {
+          sendResponse({complete: false});
+        }
+      })();
+      return true;
+    }.bind(this))
   }
 
   async initTabs() {

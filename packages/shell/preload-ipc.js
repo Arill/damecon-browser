@@ -4,9 +4,9 @@ import { ipcRenderer, contextBridge, webFrame } from 'electron'
 export const injectIpc = () => {
 
     const ipc = {
-      send: async function(channel, data, callback = () => {}) {
-        const result = await ipcRenderer.invoke(channel, data)
-        callback(result)
+      send: async function(channel, message, data) {
+        const result = await ipcRenderer.invoke(channel, message, data)
+        return result;
       },
       on: function(channel, callback) {
         ipcRenderer.on(channel, (ev, data) => callback(ev, data))
