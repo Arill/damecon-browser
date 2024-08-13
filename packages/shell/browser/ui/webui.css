@@ -56,9 +56,7 @@ ul {
   flex: 1 1 auto;
 }
 
-#topbar.tabui-hidden .toolbar,
-#topbar.tabui-hidden .tab-list,
-#topbar.tabui-hidden #createtab {
+#topbar.tabui-hidden .toolbar {
   display: none;
 }
 
@@ -88,6 +86,7 @@ ul {
   display: flex;
   flex-direction: row;
   min-width: 0;
+  padding-left: 4px;
 }
 
 #createtab {
@@ -119,8 +118,23 @@ ul {
   width: 12rem;
 }
 
-.tab-container.tab-compact {
+.tab-container[data-compact] {
   width: 44px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-items: center;
+}
+.tab-container[data-compact] .tab {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+.tab-container[data-compact] .favicon[src] {
+  margin: 0 !important;
+}
+.tab-container[data-compact] .title,
+.tab-container[data-compact] .controls {
+  display: none;
 }
 
 .app-tab-container {
@@ -136,12 +150,12 @@ ul {
   border: 0;
 }
 
-.app-icon {
+/*.app-icon {
   background-image: url('assets/icons/damecon_icon_48.png');
   background-size: 16px 16px;
   background-repeat: no-repeat;
   background-position: center;
-}
+}*/
 
 .tab {
   padding: 0.2rem 0.4rem;
@@ -194,6 +208,7 @@ ul {
   width: 16px;
   height: 16px;
   margin-right: 0.2rem;
+  pointer-events: none;
 }
 
 .tab .title {
@@ -276,6 +291,10 @@ ul {
   padding: 0.2rem 0.5rem;
   position: relative;
   z-index: 3;
+}
+
+.toolbar[data-hidden] {
+  display: none;
 }
 
 .toolbar .page-controls {

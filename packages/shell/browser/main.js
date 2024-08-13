@@ -10,16 +10,30 @@ const { setupMenu } = require('./menu')
 const { buildChromeContextMenu } = require('electron-chrome-context-menu')
 const { KC3Updater } = require('./kc3updater.js')
 
-const packageJson = JSON.parse(fsSync.readFileSync('../../package.json', 'utf8'));
+const packageJson = JSON.parse(fsSync.readFileSync('package.json', 'utf8'));
 const defaultConfig = {
   window: {
     state: {
       width: 1200,
       height: 800
     }
+  },
+  kc3kai: {
+    update: {
+      channel: 'release',
+      schedule: 'startup',
+      auto: true
+    }
+  },
+  proxy: {
+    client: {
+      host: '127.0.0.1',
+      port: 8081,
+      enable: false
+    }
   }
 }
-const config = new ConfigStore(packageJson.name, {}, {globalConfigPath: true});
+const config = new ConfigStore(packageJson.name, defaultConfig, {globalConfigPath: true});
 
 app.commandLine.appendSwitch("force-gpu-mem-available-mb", "10000")
 app.commandLine.appendSwitch("force-gpu-rasterization")
@@ -39,6 +53,7 @@ let webuiExtensionId
 let kc3ExtensionId
 let kc3StartPageUrl
 let newTabUrl
+let settingsUrl
 const manifestExists = async (dirPath) => {
   if (!dirPath) return false
   const manifestPath = path.join(dirPath, 'manifest.json')
@@ -123,7 +138,7 @@ class TabbedBrowserWindow {
     this.webContents.loadURL(webuiUrl)
     this.webContents.openDevTools({mode: 'right'})
 
-    this.tabs = new Tabs(this.window, { newTabPageUrl: newTabUrl })
+    this.tabs = new Tabs(this.window, { newTabPageUrl: newTabUrl, hideAddressBarFor: options.hideAddressBarFor })
 
 
     const self = this
@@ -306,6 +321,10 @@ class Browser {
         const win = this.getWindowFromBrowserWindow(browserWindow)
         win?.tabs.select(tab.id)
       },
+      deselect: (browserWindow) => {
+        const win = this.getWindowFromBrowserWindow(browserWindow)
+        win?.tabs.select(tab.id)
+      },
       removeTab: (tab, browserWindow) => {
         const win = this.getWindowFromBrowserWindow(browserWindow)
         win?.tabs.remove(tab.id)
@@ -333,36 +352,31 @@ class Browser {
     // initial window creation
     const webuiBase = 'chrome-extension://' + webuiExtensionId
     newTabUrl = webuiBase + '/new-tab.html'
-    const win = this.createWindow({ initialUrls: [newTabUrl] })
-    ipcMain.handle('webui-message', (ev, message, data) => {
+    settingsUrl = webuiBase + '/settings.html'
+    const win = this.createWindow({ initialUrls: [settingsUrl], hideAddressBarFor: [settingsUrl] })
+    const extensionsPath = path.join(__dirname, '../../../extensions')
+    const kc3Path = path.join(extensionsPath, 'kc3kai')
+
+    ipcMain.handle('webui-message', async (ev, message, data) => {
       console.log('main.js received message', message, data)
-      // clicked the app icon for settings menu
-      if (message == 'appicon-active') {
-        if (data.value) {
-          win.tabs.hide()
-        } else {
-          win.tabs.show()
-        }
-      }
-      else if (message == 'get-config-item') {
+      if (message == 'get-config-item') {
         return config.get(data.value);
       }
       else if (message == 'get-config') {
         return config.all;
       }
       else if (message == 'set-config-item') {
-        return config.set();
+        return config.set(data.key, data.value);
+      }
+      else if (message == 'kc3-doupdate') {
+        await this.updateKc3(kc3Path);
       }
     })
-    win.webContents.send('webui-message', {message: 'tabs-hidden', value: win.tabs.hidden})
-    
-    if (false) {
-      const extensionsPath = path.join(__dirname, '../../../extensions')
-      const kc3Path = path.join(extensionsPath, 'kc3kai')
 
       await this.updateKc3(kc3Path);
       await this.checkStartKc3(win, extensionsPath, kc3Path);
-    }
+    
+    const installedExtensions = await loadExtensions(this.session, extensionsPath)
 
     win.tabs.show()
   }

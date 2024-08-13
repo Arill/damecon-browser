@@ -9,6 +9,10 @@
     padding-left: 6px;
 }
 
+#settings-menu .menu-header {
+    padding-top: 55px;
+}
+
 #settings-menu .menu-header * {
     text-align: center;
 }
@@ -58,4 +62,8 @@
     margin: 6px;
     padding: 8px;
     color: var(--text-color-light);
+}
+
+#settings-container .settings-content {
+    max-width: 300px;
 }

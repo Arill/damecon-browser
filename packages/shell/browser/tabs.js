@@ -2,6 +2,7 @@ const { EventEmitter } = require('events')
 const { BrowserView } = require('electron')
 
 const toolbarHeight = 62
+const tabBarHeight = 32
 
 class Tab {
   constructor(parentWindow) {
@@ -42,7 +43,9 @@ class Tab {
   show() {
     const [width, height] = this.window.getSize()
     this.view.setBackgroundColor('white');
-    this.view.setBounds({ x: 0, y: toolbarHeight, width: width, height: height - toolbarHeight })
+
+    const yOffset = this.hideToolbar ? tabBarHeight : toolbarHeight;
+    this.view.setBounds({ x: 0, y: yOffset, width: width, height: height - yOffset })
     this.view.setAutoResize({ width: true, height: true })
     // this.window.addBrowserView(this.view)
   }
@@ -64,12 +67,14 @@ class Tabs extends EventEmitter {
   selected = null
   newTabPageUrl = null
   hidden = false
+  hideAddressBarFor = []
 
   constructor(browserWindow, options) {
     super()
     this.window = browserWindow
     this.newTabPageUrl = options.newTabPageUrl ?? 'about:blank'
     this.hidden = options?.hidden ?? false
+    this.hideAddressBarFor = options?.hideAddressBarFor ?? []
   }
 
   destroy() {
@@ -94,6 +99,10 @@ class Tabs extends EventEmitter {
     if (!this.selected)
       this.selected = tab
     
+    if (options && this.hideAddressBarFor.includes(options.initialUrl)) {
+      tab.hideToolbar = true
+    }
+
     const url = options?.initialUrl ?? this.newTabPageUrl
     tab.webContents.loadURL(url)
     tab.webContents.on('did-navigate', (origin, targets) => {
@@ -126,26 +135,32 @@ class Tabs extends EventEmitter {
   select(tabId) {
     const tab = this.get(tabId)
     if (!tab) return
-    if (this.selected)
+    if (this.selected && this.selected != tab)
       this.selected.hide()
     if (!this.hidden)
       tab.show()
     this.selected = tab
     this.emit('tab-selected', tab)
   }
+  deselect() {
+    const tab = this.selected
+    if (tab) {
+      this.emit('tab-deselected', tab)
+      tab.hide()
+    }
+    this.selected = null
+  }
 
   hide() {
+    if (this.selected)
+      this.deselect()
     this.hidden = true
-    if (!this.selected) return
-    this.selected.hide()
-    this.emit('tabs-hidden', true)
   }
 
   show() {
     this.hidden = false
-    if (!this.selected) return
-    this.selected.show()
-    this.emit('tabs-hidden', false)
+    if (this.selected)
+      this.selected.show()
   }
 }
 

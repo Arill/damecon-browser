@@ -2,16 +2,17 @@ class WebUI {
   windowId = -1
   activeTabId = -1
   tabList = []
+  settingsUrl = 'chrome-extension://' + chrome.runtime.id + '/settings.html'
 
   constructor() {
     const $ = document.querySelector.bind(document)
 
     this.$ = {
       topBar: $('#topbar'),
-      appIcon: $('.app-tab'),
       tabList: $('#tabstrip .tab-list'),
       tabTemplate: $('#tabtemplate'),
       createTabButton: $('#createtab'),
+      toolBar: $('.toolbar'),
       goBackButton: $('#goback'),
       goForwardButton: $('#goforward'),
       reloadButton: $('#reload'),
@@ -25,15 +26,18 @@ class WebUI {
     }
     
     ipc.on('webui-message', (ev, data) => {
-      if (data.message === 'tabs-hidden') {
+      /*if (data.message === 'tabs-hidden') {
         if (data.value == true) {
           this.$.topBar.classList.add('tabui-hidden')
+          this.activeTabId = -1;
         }
         else {
           this.$.topBar.classList.remove('tabui-hidden')
         }
+        this.renderTabs();
       }
-      else alert('webui.js received unknown webui-message:\n' + JSON.stringify(data))
+      else
+      */ alert('webui.js received unknown webui-message:\n' + JSON.stringify(data))
     })
 
 
@@ -55,29 +59,24 @@ class WebUI {
     )
     this.$.closeButton.addEventListener('click', () => chrome.windows.remove())
 
-    this.$.appIcon.addEventListener('click', async () => {
-      const ds = this.$.appIcon.dataset
-      const active = ds.active === ''
-      if (active) delete ds.active
-      else ds.active = ''
-      await ipc.send('webui-message', 'appicon-active', {value: !active})
-    })
-
     this.initTabs()
 
     chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       (async () => {
-        console.log('webui.js received message', request)
+        console.log('webui.js received message')
         let result;
         try {
           if (request.message === 'get-config') {
             result = await ipc.send('webui-message', 'get-config');
           }
           else if (request.message === 'get-config-item') {
-            result = await ipc.send('webui-message', 'get-config-item', {key: request.key});
+            result = await ipc.send('webui-message', 'get-config-item', {key: request.data.key});
           }
           else if (request.message === 'set-config-item') {
-            result = await ipc.send('webui-message', 'set-config-item', {key: request.key, value: request.value});
+            result = await ipc.send('webui-message', 'set-config-item', {key: request.data.key, value: request.data.value});
+          }
+          else if (request.message === 'kc3-doupdate') {
+            result = await ipc.send('webui-message', 'kc3-doupdate');
           }
           else throw new Error(`Unknown message type ${request.message || '(none)'}`);
           
@@ -94,12 +93,9 @@ class WebUI {
   async initTabs() {
     const tabs = await new Promise((resolve) => chrome.tabs.query({ windowId: -2 }, resolve))
     this.tabList = [...tabs]
-    this.renderTabs()
 
     const activeTab = this.tabList.find((tab) => tab.active)
-    if (activeTab) {
-      this.setActiveTab(activeTab)
-    }
+    this.setActiveTab(activeTab)
 
     // Wait to setup tabs and windowId prior to listening for updates.
     this.setupBrowserListeners()
@@ -141,8 +137,11 @@ class WebUI {
       const tab = findTab(tabId)
       if (!tab) return
       Object.assign(tab, details)
-      this.renderTabs()
-      if (tabId === this.activeTabId) this.renderToolbar(tab)
+      if (tab.active) {
+        this.setActiveTab(tab)
+      }
+      else
+        this.renderTabs()
     })
 
     chrome.tabs.onRemoved.addListener((tabId) => {
@@ -155,18 +154,30 @@ class WebUI {
   }
 
   setActiveTab(activeTab) {
-    this.activeTabId = activeTab.id || activeTab.tabId
-    this.windowId = activeTab.windowId
+    this.activeTabId = activeTab?.id || activeTab?.tabId
+    this.windowId = activeTab?.windowId || this.windowId
+    this.renderTabs()
+  }
 
-    for (const tab of this.tabList) {
-      if (tab.id === this.activeTabId) {
+  renderTabs() {
+    let activeFound = this.activeTabId == -1
+    let activeTab
+
+    for (let i = 0; i < this.tabList.length; i++) {
+      const tab = this.tabList[i]
+      const isActiveTab = tab.id === this.activeTabId
+      if (this.activeTabId && isActiveTab) {
         tab.active = true
-        this.renderTab(tab)
-        this.renderToolbar(tab)
+        activeTab = tab
       } else {
         tab.active = false
       }
+      activeFound = tab.active || activeFound
+      if (!tab.active && i > 0)
+        tab.tabPosition = activeFound ? 'after' : 'before'
+      this.renderTab(tab)
     }
+    this.renderToolbar(activeTab)
   }
 
   onAddressUrlKeyPress(event) {
@@ -203,6 +214,14 @@ class WebUI {
       tabElem.dataset.tabPosition = tab.tabPosition
     }
 
+
+    if (tab.url == this.settingsUrl) {
+      tabElem.dataset.compact = ''
+    } else {
+      delete tabElem.dataset.compact
+    }
+    
+
     const favicon = tabElem.querySelector('.favicon')
     if (tab.favIconUrl) {
       favicon.src = tab.favIconUrl
@@ -214,19 +233,14 @@ class WebUI {
     tabElem.querySelector('.audio').disabled = !tab.audible
   }
 
-  renderTabs() {
-    let activeFound = false
-    this.tabList.forEach(tab => {
-      activeFound = tab.active || activeFound
-      if (!tab.active)
-        tab.tabPosition = activeFound ? 'after' : 'before'
-      this.renderTab(tab)
-    })
-  }
-
   renderToolbar(tab) {
-    this.$.addressUrl.value = tab.url
+    this.$.addressUrl.value = tab?.url
     // this.$.browserActions.tab = tab.id
+    
+    if (tab?.url == this.settingsUrl)
+      this.$.toolBar.dataset.hidden = ''
+    else
+      delete this.$.toolBar.dataset.hidden
   }
 }
 

@@ -1,50 +1,96 @@
 <!DOCTYPE html>
 <html>
     <head>
+      <title>Damecon settings</title>
       <meta charset="utf-8">
-      <title>Damecon</title>
 
+      <script type="text/javascript" src="assets/js/jquery-3.3.1.min.js"></script>
       <script type="text/javascript" src="assets/js/popper.min.js"></script>
       <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
       <script type="text/javascript" src="assets/js/fontawesome.js"></script>
 
-      <script type="text/javascript" src="assets/js/jquery-3.3.1.min.js"></script>
       <script type="text/javascript" src="assets/js/knockout-3.5.1.js"></script>
       <script type="text/javascript" src="assets/js/knockout-i18n.js"></script>
       
       <script type="text/javascript" src="settings.js"></script>
       
+      <link rel="stylesheet" href="assets/css/bootstrap.min.css" />
       <link rel="stylesheet" href="webui.css" />
       <link rel="stylesheet" href="settings.css" />
+
+      <link rel="icon" href="assets/icons/damecon_icon_48.png" />
     </head>
     <body>
       <div id="root">
         <div id="settings-menu">
           <div class="menu-header">
-            <h4>Damecon Settings</h4>
+            <!--<h5>Damecon</h5>-->
           </div>
           <div class="menu-items">
-            <div class="menu-item">
+            <!-- ko foreach: self.configPages -->
+            <div class="menu-item" data-bind="attr: { 'data-active': self.selectedConfigPage() === $data.id }, click: self.selectConfigPage">
               <span class="icon">
-                <img src="assets/icons/kc3kai.png">
-              </span>
-              <span class="header">
-                KC3Kai
-              </span>
-            </div>
-            <div class="menu-item">
-              <span class="icon">
-                <i class="fa-solid fa-circle-nodes"></i>
-              </span>
-              <span class="header">
-                Proxy
-              </span>
-            </div>
+                <!-- ko if: $data.img-->
+                <img data-bind="attr: { src: img }">
+                <!-- /ko -->
+                <!-- ko if: $data.faIcon -->
+                <i data-bind="attr: { class: faIcon }"></i>
+                <!-- /ko -->
+                </span>
+              <span class="header" data-bind="text: name"></span>
+            </span>
           </div>
-        </div>
-        <div id="settings-container">
-          <span data-bind="text: bindTest"></span>
+          <!-- /ko -->
         </div>
       </div>
-    </body>
+      <div id="settings-container">
+        <div class="settings-content">
+          <!-- ko template: { name: 'settings-content-' + self.selectedConfigPage() } -->
+          <!-- /ko -->
+        </div>
+        <div class="settings-actions">
+
+        </div>
+      </div>
+    </div>
+    <div id="settings-content-templates">
+      <script type="text/html" id="settings-content-0">
+        <h3>KC3Kai Settings</h3>
+        <form>
+          <div class="form-group">
+            <label for="kc3updatechannel">Update channel</label>
+            <select class="form-control" id="kc3updatechannel" data-bind="options: self.kc3UpdateChannels, value: self.kc3UpdateChannel"></select>
+          </div>
+          <div class="form-group">
+            <label for="kc3updateschedule">Update schedule</label>
+            <select class="form-control" id="kc3updateschedule" data-bind="options: self.kc3UpdateSchedules, value: self.kc3UpdateSchedule"></select>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" id="kc3updatesauto" type="checkbox" data-bind="checked: self.kc3UpdateAuto"></input>
+            <label class="form-check-label" for="kc3updatesauto">Apply updates without asking</label>
+          </div>
+          <div class="form-group">
+            <button class="btn btn-secondary" type="button" data-bind="click: kc3CheckForUpdates">Check for updates</button>
+          </div>
+        </form>
+      </script>
+      <script type="text/html" id="settings-content-1">
+        <h3>Proxy Settings</h3>
+        <form>
+          <div class="form-group">
+            <label for="proxyclienthost">Host</label>
+            <input id="proxyclienthost" type="text" class="form-control" data-bind="value: self.proxyClientHost" placeholder="Enter IP/host (e.g. 127.0.0.1)">
+          </div>
+          <div class="form-group">
+            <label for="proxyclientport">Port</label>
+            <input id="proxyclientport" type="number" class="form-control" data-bind="value: self.proxyClientPort" placeholder="Enter port (e.g. 8081)">
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" id="proxyclientenable" type="checkbox" data-bind="checked: self.proxyClientEnable"></input>
+            <label class="form-check-label" for="proxyclientenable">Enabled</label>
+          </div>
+        </form>
+      </script>
+    </div>
+  </body>
 </html>
