@@ -23,16 +23,17 @@
         user-select: none;
       }
 
-      html {
-        background: #ececec;
+      html, body, #root {
         height: 100%;
         margin: 0;
         padding: 0;
       }
 
+      html {
+        background: #ececec;
+      }
+
       body {
-        padding: 0;
-        margin: 0;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
         font-size: 16px;
         color: var(--text-color);
@@ -44,10 +45,21 @@
         list-style: none;
       }
 
+      #root {
+        display: flex;
+        flex-direction: column;
+      }
+
       #topbar {
+        flex: 0 1 auto;
         background: var(--bg-color);
         height: 2rem;
         overflow-x: clip; /* don't scroll for the oversized tabstrip shadower */
+      }
+
+      #settings {
+        height: 100%;
+        flex: 1 1 auto;
       }
 
       #topbar.tabui-hidden .toolbar,
@@ -331,54 +343,57 @@
     </style>
   </head>
   <body>
-    <div id="topbar">
-      <div id="tabstrip">
-        <div class="app-tab-container">
-          <div class="tab-container tab-compact app-tab">
-            <div class="app-icon tab"></div>
+    <div id="root">
+      <div id="topbar">
+        <div id="tabstrip">
+          <div class="app-tab-container">
+            <div class="tab-container tab-compact app-tab">
+              <div class="app-icon tab"></div>
+            </div>
+          </div>
+          <ul class="tab-list">
+            <template id="tabtemplate">
+              <li class="tab-container">
+                <div class="tab">
+                  <img class="favicon" />
+                  <span class="title"></span>
+                  <div class="controls">
+                    <button class="control audio" disabled>🔊</button>
+                    <button class="control close"><i class="fa-sharp fa-solid fa-xmark"></i></button>
+                  </div>
+                </div>
+              </li>
+            </template>
+          </ul>
+          <button id="createtab">
+            <div style="position: relative; width: 13px; height: 13px;">
+              <div style="background: #ffffffaf; width: 1px; height: 13px; position: absolute; left: 6px;"></div>
+              <div style="background: #ffffffaf; width: 13px; height: 1px; position: absolute; top: 6px;"></div>
+            </div>
+          </button>
+          <div class="app-drag app-drag-right"></div>
+          <div class="window-controls">
+            <button id="minimize" class="control"><i class="fa-regular fa-window-minimize fa-xs"></i></button>
+            <button id="maximize" class="control"><i class="fa-regular fa-square-full fa-2xs"></i></button>
+            <button id="close" class="control"><i class="fa-solid fa-xmark"></i></button>
           </div>
         </div>
-        <ul class="tab-list">
-          <template id="tabtemplate">
-            <li class="tab-container">
-              <div class="tab">
-                <img class="favicon" />
-                <span class="title"></span>
-                <div class="controls">
-                  <button class="control audio" disabled>🔊</button>
-                  <button class="control close"><i class="fa-sharp fa-solid fa-xmark"></i></button>
-                </div>
-              </div>
-            </li>
-          </template>
-        </ul>
-        <button id="createtab">
-          <div style="position: relative; width: 13px; height: 13px;">
-            <div style="background: #ffffffaf; width: 1px; height: 13px; position: absolute; left: 6px;"></div>
-            <div style="background: #ffffffaf; width: 13px; height: 1px; position: absolute; top: 6px;"></div>
+        <div class="toolbar">
+          <div class="page-controls">
+            <button id="goback" class="control"><i class="fa-solid fa-arrow-left"></i></button>
+            <button id="goforward" class="control"><i class="fa-solid fa-arrow-right"></i></button>
+            <button id="reload" class="control"><i class="fa-solid fa-rotate-right"></i></button>
           </div>
-        </button>
-        <div class="app-drag app-drag-right"></div>
-        <div class="window-controls">
-          <button id="minimize" class="control"><i class="fa-regular fa-window-minimize fa-xs"></i></button>
-          <button id="maximize" class="control"><i class="fa-regular fa-square-full fa-2xs"></i></button>
-          <button id="close" class="control"><i class="fa-solid fa-xmark"></i></button>
+          <div class="address-bar">
+            <input id="addressurl" spellcheck="false" />
+          </div>
+          <browser-action-list id="actions"></browser-action-list>
         </div>
       </div>
-      <div class="toolbar">
-        <div class="page-controls">
-          <button id="goback" class="control"><i class="fa-solid fa-arrow-left"></i></button>
-          <button id="goforward" class="control"><i class="fa-solid fa-arrow-right"></i></button>
-          <button id="reload" class="control"><i class="fa-solid fa-rotate-right"></i></button>
-        </div>
-        <div class="address-bar">
-          <input id="addressurl" spellcheck="false" />
-        </div>
-        <browser-action-list id="actions"></browser-action-list>
+      <div id="settings">
+        
       </div>
     </div>
-  </div>
-  <div id="settings"></div>
-  <script src="./webui.js"></script>
+    <script src="./webui.js"></script>
   </body>
 </html>
