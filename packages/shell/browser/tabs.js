@@ -41,6 +41,7 @@ class Tab {
 
   show() {
     const [width, height] = this.window.getSize()
+    this.view.setBackgroundColor('white');
     this.view.setBounds({ x: 0, y: toolbarHeight, width: width, height: height - toolbarHeight })
     this.view.setAutoResize({ width: true, height: true })
     // this.window.addBrowserView(this.view)
