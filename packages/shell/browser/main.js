@@ -1,5 +1,6 @@
 const path = require('path')
 const fsSync = require('fs')
+const url = require('url')
 const fs = fsSync.promises
 const { app, session, BrowserWindow, globalShortcut, ipcMain } = require('electron')
 const ConfigStore = require('configstore')
@@ -148,13 +149,13 @@ class TabbedBrowserWindow {
 
     const self = this
 
-    this.tabs.on('tab-created', function onTabCreated(tab, url) {
+    this.tabs.on('tab-created', function onTabCreated(tab, tabUrl) {
       // Track tab that may have been created outside of the extensions API.
       self.extensions.addTab(tab.webContents, tab.window)
     })
 
-    this.tabs.on('tab-navigated', function onTabNavigated(tab, url) {
-      if (url === kc3StartPageUrl && config.get('kc3kai.startup.openDevtools')) {
+    this.tabs.on('tab-navigated', function onTabNavigated(tab, tabUrl) {
+      if (tabUrl === kc3StartPageUrl && config.get('kc3kai.startup.openDevtools')) {
         tab.webContents.openDevTools({ mode: 'bottom', activate: true })
       }
     })
@@ -173,11 +174,11 @@ class TabbedBrowserWindow {
       if (options.initialUrls) {
         let initialTabId
         for (let i = 0; i < options.initialUrls.length; i++) {
-          const url = options.initialUrls[i]
+          const thisUrl = options.initialUrls[i]
           const tab = self.tabs.create({
-            initialUrl: url,
+            initialUrl: thisUrl,
             activate: i === 0,
-            devToolsMode: url == kc3StartPageUrl ? 'bottom' : undefined
+            devToolsMode: thisUrl == kc3StartPageUrl ? 'bottom' : undefined
           })
           if (i === 0)
             initialTabId = tab.id
@@ -245,7 +246,8 @@ class TabbedBrowserWindow {
       const host = config.get('proxy.client.host')
       const port = config.get('proxy.client.port')
       const data = this.generatePac(host, port);
-      const proxyConfig = { mode: 'pac_script', pacScript: { data, mandatory: true } };
+      const pacData = 'data:application/x-ns-proxy-autoconfig;base64,' + Buffer.from(data, 'utf8').toString('base64')
+      const proxyConfig = { mode: 'pac_script', pacScript: pacData };
       await this.window.webContents.session.setProxy(proxyConfig)
     }
     else {
@@ -523,8 +525,8 @@ class Browser {
 
   async onWebContentsCreated(event, webContents) {
     const type = webContents.getType()
-    const url = webContents.getURL()
-    // console.log(`'web-contents-created' event [type:${type}, url:${url}]`)
+    const webContentsUrl = webContents.getURL()
+    // console.log(`'web-contents-created' event [type:${type}, url:${webContentsUrl}]`)
 
     if (process.env.SHELL_DEBUG && webContents.getType() === 'backgroundPage') {
       webContents.openDevTools({ mode: 'detach', activate: true })
@@ -558,16 +560,16 @@ class Browser {
         params,
         webContents,
         extensionMenuItems: this.extensions.getContextMenuItems(webContents, params),
-        openLink: (url, disposition) => {
+        openLink: (linkUrl, disposition) => {
           const win = this.getFocusedWindow()
 
           switch (disposition) {
             case 'new-window':
-              this.createWindow({ initialUrl: url })
+              this.createWindow({ initialUrl: linkUrl })
               break
             default:
               const tab = win.tabs.create()
-              tab.loadURL(url)
+              tab.loadURL(linkUrl)
           }
         },
       })
