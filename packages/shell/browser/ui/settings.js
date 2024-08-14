@@ -96,6 +96,9 @@ this.viewModel = function() {
             'kc3UpdateChannel': 'kc3kai.update.channel',
             'kc3UpdateSchedule': 'kc3kai.update.schedule',
             'kc3UpdateAuto': 'kc3kai.update.auto',
+            'kc3OpenStartPage': 'kc3kai.startup.openStartPage',
+            'kc3OpenDevtools': 'kc3kai.startup.openDevtools',
+            'kc3OpenStratRoom': 'kc3kai.startup.openStratRoom'
         },
         proxy: {
             'proxyClientHost': 'proxy.client.host',

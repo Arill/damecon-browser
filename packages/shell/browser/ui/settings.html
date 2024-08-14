@@ -57,6 +57,18 @@
       <script type="text/html" id="settings-content-0">
         <h3>KC3Kai Settings</h3>
         <form>
+          <div class="form-check">
+            <input class="form-check-input" id="kc3openstartpage" type="checkbox" data-bind="checked: self.kc3OpenStartPage"></input>
+            <label class="form-check-label" for="kc3openstartpage">Auto-open start page</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" id="kc3opendevtools" type="checkbox" data-bind="checked: self.kc3OpenDevtools"></input>
+            <label class="form-check-label" for="kc3opendevtools">Auto-open devtools</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" id="kc3openstratroom" type="checkbox" data-bind="checked: self.kc3OpenStratRoom"></input>
+            <label class="form-check-label" for="kc3openstratroom">Auto-open strategy room</label>
+          </div>
           <div class="form-group">
             <label for="kc3updatechannel">Update channel</label>
             <select class="form-control" id="kc3updatechannel" data-bind="options: self.kc3UpdateChannels, value: self.kc3UpdateChannel"></select>

@@ -23,6 +23,11 @@ const defaultConfig = {
       channel: 'release',
       schedule: 'startup',
       auto: true
+    },
+    startup: {
+      openStartPage: true,
+      openDevtools: true,
+      openStratRoom: true
     }
   },
   proxy: {
@@ -136,7 +141,7 @@ class TabbedBrowserWindow {
 
     const webuiUrl = path.join('chrome-extension://', webuiExtensionId, '/webui.html')
     this.webContents.loadURL(webuiUrl)
-    this.webContents.openDevTools({mode: 'right'})
+    this.webContents.openDevTools({mode: 'detach'})
 
     this.tabs = new Tabs(this.window, { newTabPageUrl: newTabUrl, hideAddressBarFor: options.hideAddressBarFor })
 
@@ -149,7 +154,7 @@ class TabbedBrowserWindow {
     })
 
     this.tabs.on('tab-navigated', function onTabNavigated(tab, url) {
-      if (url === kc3StartPageUrl) {
+      if (url === kc3StartPageUrl && config.get('kc3kai.startup.openDevtools')) {
         tab.webContents.openDevTools({ mode: 'bottom', activate: true })
       }
     })
@@ -162,7 +167,8 @@ class TabbedBrowserWindow {
       self.webContents.send('webui-message', {message: 'tabs-hidden', value: hidden})
     })
 
-    queueMicrotask(() => {
+    queueMicrotask(async () => {
+      await this.applyProxy()
       // Create initial tab
       if (options.initialUrls) {
         let initialTabId
@@ -196,6 +202,56 @@ class TabbedBrowserWindow {
   getFocusedTab() {
     return this.tabs.selected
   }
+  
+  generatePac(host, port) {
+    const ips = [
+        '203.104.209.71',
+        '203.104.209.87',
+        '125.6.184.215',
+        '203.104.209.183',
+        '203.104.209.150',
+        '203.104.209.134',
+        '203.104.209.167',
+        '203.104.209.199',
+        '125.6.189.7',
+        '125.6.189.39',
+        '125.6.189.71',
+        '125.6.189.103',
+        '125.6.189.135',
+        '125.6.189.167',
+        '125.6.189.215',
+        '125.6.189.247',
+        '203.104.209.23',
+        '203.104.209.39',
+        '203.104.209.55',
+        '203.104.209.102'
+    ];
+    const gadget = '203.104.209.7';
+
+    const ipsExp = ips.join('|');
+    const pac = 'function FindProxyForURL(url, host) {\n'
+    + `  if (shExpMatch(url, "http://(${ipsExp})/(kcs|kcs2)/*") || host == "${gadget}")\n`
+    + `    return "PROXY ${host}:${port}";\n`
+    + '  return "DIRECT";\n'
+    + '}\n';
+
+    return pac;
+  };
+
+  async applyProxy() {
+    console.log()
+    const enable = config.get('proxy.client.enable')
+    if (enable) {
+      const host = config.get('proxy.client.host')
+      const port = config.get('proxy.client.port')
+      const data = this.generatePac(host, port);
+      const proxyConfig = { mode: 'pac_script', pacScript: { data, mandatory: true } };
+      await this.window.webContents.session.setProxy(proxyConfig)
+    }
+    else {
+      await this.window.webContents.session.setProxy({ mode: 'system' })
+    }
+  };
 }
 
 class Browser {
@@ -359,26 +415,30 @@ class Browser {
 
     ipcMain.handle('webui-message', async (ev, message, data) => {
       console.log('main.js received message', message, data)
+      let result
       if (message == 'get-config-item') {
-        return config.get(data.value);
+        result = config.get(data.value);
       }
       else if (message == 'get-config') {
-        return config.all;
+        result = config.all;
       }
       else if (message == 'set-config-item') {
-        return config.set(data.key, data.value);
+        result = config.set(data.key, data.value);
+        if (data.key.startsWith('proxy.client.'))
+          await win.applyProxy()
       }
       else if (message == 'kc3-doupdate') {
         await this.updateKc3(kc3Path);
       }
+      return result;
     })
 
-      await this.updateKc3(kc3Path);
-      await this.checkStartKc3(win, extensionsPath, kc3Path);
+    await this.updateKc3(kc3Path);
+    await this.checkStartKc3(win, extensionsPath, kc3Path);
     
     const installedExtensions = await loadExtensions(this.session, extensionsPath)
 
-    win.tabs.show()
+    //win.tabs.show()
   }
 
   async updateKc3(kc3Path) {
@@ -400,20 +460,21 @@ class Browser {
     if (kc3) {
       console.log('KC3Kai loaded!')
 
-      // store the initial tab so we can remove it
-      const initialTab = win.tabs.selected;
-
       // open KC3 start page
       kc3ExtensionId = kc3.id
       kc3StartPageUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/game/direct.html'
-      const startTab = win.tabs.create({ initialUrl: kc3StartPageUrl })
+      let startTab
+      if (config.get('kc3kai.startup.openStartPage'))
+        startTab = win.tabs.create({ initialUrl: kc3StartPageUrl })
       
-      // TODO: make strat room auto-open optional
       const kc3StratRoomUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/strategy/strategy.html'
-      win.tabs.create({ initialUrl: kc3StratRoomUrl })
+      if (config.get('kc3kai.startup.openStratRoom')) {
+        const stratRoomTab = win.tabs.create({ initialUrl: kc3StratRoomUrl })
+        startTab = startTab || stratRoomTab
+      }
 
-      initialTab.destroy()
-      win.tabs.select(startTab.id)
+      if (startTab)
+        win.tabs.select(startTab.id)
     }
   }
 
