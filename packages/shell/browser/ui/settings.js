@@ -44,11 +44,16 @@ this.viewModel = function() {
     self.configPages = ko.observableArray([
         {
             id: 0,
+            name: 'Damecon',
+            img: 'assets/icons/damecon_icon_48.png'
+        },
+        {
+            id: 1,
             name: 'KC3Kai',
             img: 'assets/icons/kc3kai.png'
         },
         {
-            id: 1,
+            id: 2,
             name: 'Proxy',
             faIcon: 'fa-solid fa-circle-nodes'
         }
@@ -88,10 +93,16 @@ this.viewModel = function() {
 
     self.selectedConfigPage = ko.observable(0);
 
+    self.windowStyleThemes = [ 'default', 'daybreak' ];
+    self.windowStyleBrightnesses = [ 'light', 'dark' ];
     self.kc3UpdateChannels = [ 'release', 'master', 'develop' ];
     self.kc3UpdateSchedules = [ 'startup', 'daily', 'weekly', 'manual' ];
 
     self.settings = {
+        window: {
+            'windowStyleTheme': 'window.style.theme',
+            'windowStyleBrightness': 'window.style.brightness'
+        },
         kc3kai: {
             'kc3UpdateChannel': 'kc3kai.update.channel',
             'kc3UpdateSchedule': 'kc3kai.update.schedule',
@@ -118,6 +129,9 @@ this.viewModel = function() {
             configStore.set(path, newValue);
         })
     });
+
+    self.windowStyleTheme.subscribe((newValue) => document.querySelector('body').dataset.colorTheme = newValue)
+    self.windowStyleBrightness.subscribe((newValue) => document.querySelector('body').dataset.brightness = newValue)
 
     self.fetchConfig();
 }

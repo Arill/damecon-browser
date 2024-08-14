@@ -1,7 +1,8 @@
 #root {
     display: flex;
     flex-direction: row;
-    background-color: var(--tab-color);
+    background-color: var(--chrome-fg-color);
+    color: var(--chrome-text-color);
 }
 
 #settings-menu {
@@ -40,7 +41,7 @@
 }
 
 #settings-menu .menu-item[data-active] {
-    background-color: var(--mid-color);
+    background-color: var(--chrome-mid-color);
 }
 
 #settings-menu .menu-item .icon,
@@ -57,13 +58,20 @@
 
 #settings-container {
     flex: 1 1 auto;
-    background-color: white;
+    background-color: var(--content-bg-color);
     border-radius: 6px;
     margin: 6px;
-    padding: 8px;
-    color: var(--text-color-light);
+    padding: 20px;
+    color: var(--content-text-color);
 }
 
 #settings-container .settings-content {
     max-width: 300px;
+}
+
+#settings-container .settings-group {
+    margin-bottom: 10px;
+    background-color: var(--content-fg-color);
+    border-radius: 6px;
+    padding: 20px;
 }

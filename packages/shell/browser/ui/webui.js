@@ -8,6 +8,8 @@ class WebUI {
     const $ = document.querySelector.bind(document)
 
     this.$ = {
+      body: $('body'),
+      root: $('#root'),
       topBar: $('#topbar'),
       tabList: $('#tabstrip .tab-list'),
       tabTemplate: $('#tabtemplate'),
@@ -59,8 +61,6 @@ class WebUI {
     )
     this.$.closeButton.addEventListener('click', () => chrome.windows.remove())
 
-    this.initTabs()
-
     chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       (async () => {
         console.log('webui.js received message')
@@ -74,6 +74,12 @@ class WebUI {
           }
           else if (request.message === 'set-config-item') {
             result = await ipc.send('webui-message', 'set-config-item', {key: request.data.key, value: request.data.value});
+            if (request.data.key == 'window.style.theme') {
+              this.$.body.dataset.colorTheme = request.data.value;
+            }
+            else if (request.data.key == 'window.style.brightness') {
+              this.$.body.dataset.brightness = request.data.value;
+            }
           }
           else if (request.message === 'kc3-doupdate') {
             result = await ipc.send('webui-message', 'kc3-doupdate');
@@ -88,6 +94,20 @@ class WebUI {
       })();
       return true;
     }.bind(this))
+    
+    this.init()
+  }
+
+  async init() {
+    await this.initTheme()
+    await this.initTabs()
+  }
+
+  async initTheme() {
+    const theme = await ipc.send('webui-message', 'get-config-item', {key: 'window.style.theme'})
+    this.$.body.dataset.colorTheme = theme
+    const bright = await ipc.send('webui-message', 'get-config-item', {key: 'window.style.brightness'})
+    this.$.body.dataset.brightness = bright
   }
 
   async initTabs() {

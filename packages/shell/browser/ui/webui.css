@@ -1,15 +1,38 @@
 :root {
-  /* https://colorhunt.co/palette/161920 */
-  --tab-color: #745c97;
-  --mid-color: #544a79;
-  --bg-color: #39375b;
-  --text-color: #ececec;
-  --text-color-light: #202020;
-  --toolbar-control-color: #d597ce;
-  --control-hover-bg-color: #ffffff17;
-
   /* electron-chrome-extensions colors */
   --browser-action-badge-outline: var(--tab-color);
+}
+
+body[data-color-theme='default'] {
+  --chrome-fg-color: #0C4C7C;
+  --chrome-mid-color: #083A60;
+  --chrome-bg-color: #062A46;
+  --chrome-text-color: #ececec;
+  --toolbar-control-color: #d597ce;
+  --control-text-color: #ececec;
+  --control-hover-bg-color: #ffffff17;
+}
+
+body[data-color-theme='daybreak'] {
+  --chrome-fg-color: #745c97;
+  --chrome-mid-color: #544a79;
+  --chrome-bg-color: #39375b;
+  --chrome-text-color: #ececec;
+  --toolbar-control-color: #d597ce;
+  --control-text-color: #ececec;
+  --control-hover-bg-color: #ffffff17;
+}
+
+body[data-brightness='light'] {
+  --content-bg-color: #f7f7f7;
+  --content-fg-color: #ffffff;
+  --content-text-color: #202020;
+}
+
+body[data-brightness='dark'] {
+  --content-bg-color: #323232;
+  --content-fg-color: #3A3A3A;
+  --content-text-color: #ececec;
 }
 
 *, *:before, *:after {
@@ -30,7 +53,6 @@ html {
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
   font-size: 16px;
-  color: var(--text-color);
 }
 
 ul {
@@ -46,9 +68,10 @@ ul {
 
 #topbar {
   flex: 0 1 auto;
-  background: var(--bg-color);
   height: 2rem;
   overflow-x: clip; /* don't scroll for the oversized tabstrip shadower */
+  color: var(--chrome-text-color);
+  background: var(--chrome-bg-color);
 }
 
 #settings {
@@ -92,7 +115,7 @@ ul {
 #createtab {
   background: transparent;
   border: none;
-  color: #fff;
+  color: var(--control-text-color);
   font-weight: bold;
   font-family: 'Courier New', Courier, monospace;
   min-width: 21px;
@@ -175,7 +198,7 @@ ul {
 }
 
 .tab-container[data-active] .tab {
-  background-color: var(--tab-color);
+  background-color: var(--chrome-fg-color);
   z-index: 2;
 }
 .tab-container::after {
@@ -227,14 +250,14 @@ ul {
 }
 
 .tab .controls .control {
-  background-color: rgba(0,0,0,0);
+  background-color: transparent;
   border: none;
   border-radius: 20%;
   padding: 0;
   margin-left: 0.2rem;
   width: 1rem;
   height: 1rem;
-  color: #aaa;
+  color: var(--control-text-color);
   font-size: 0.7rem;
   vertical-align: middle;
   line-height: 0;
@@ -273,7 +296,7 @@ ul {
   width: 2.5rem;
   background: none;
   border: none;
-  color: #ffffffaf;
+  color: var(--control-text-color);
 }
 
 .window-controls .control:hover {
@@ -285,12 +308,12 @@ ul {
 
 .toolbar {
   height: 1.875rem;
-  background-color: var(--tab-color);
   display: flex;
   align-items: center;
   padding: 0.2rem 0.5rem;
   position: relative;
   z-index: 3;
+  background-color: var(--chrome-fg-color);
 }
 
 .toolbar[data-hidden] {
@@ -310,16 +333,15 @@ ul {
 .address-bar input {
   width: 100%;
   height: 100%;
-  background: var(--mid-color);
-  color: var(--text-color);
   border: none;
   border-radius: 2rem;
   padding: 0 0.5rem;
   outline: none;
+  background-color: var(--chrome-mid-color);
+  color: var(--chrome-text-color);
 }
 
 .address-bar input:focus {
-  background: var(--bg-color);
   box-shadow: 0px 0px 1px 1px #BC96FF7f;
 }
 
@@ -330,12 +352,12 @@ ul {
   height: 1.5rem;
   padding: 0;
   line-height: 0;
-  color: #ffffff7f;
+  color: var(--control-text-color);
 }
 
 .toolbar .control:hover {
   background: var(--control-hover-bg-color);
-  color: #ffffffaf;
+  color: var(--control-text-color);
   border-radius: 3px;
 }
 
@@ -351,8 +373,4 @@ browser-action-list::part(action) {
 }
 browser-action-list::part(action):hover {
   background-color: var(--control-hover-bg-color);
-}
-
-#settings {
-  background-color: var(--tab-color)
 }

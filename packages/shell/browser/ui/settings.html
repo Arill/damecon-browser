@@ -55,8 +55,21 @@
     </div>
     <div id="settings-content-templates">
       <script type="text/html" id="settings-content-0">
+        <h3>Damecon Settings</h3>
+        <div class="settings-group">
+          <div class="form-group">
+            <label for="windowstyletheme">Theme</label>
+            <select id="windowstyletheme" class="form-control" data-bind="options: self.windowStyleThemes, value: self.windowStyleTheme"></select>
+          </div>
+          <div class="form-group">
+            <label for="windowstylebright">Brightness</label>
+            <select id="windowstylebright" class="form-control" data-bind="options: self.windowStyleBrightnesses, value: self.windowStyleBrightness"></select>
+          </div>
+        </div>
+      </script>
+      <script type="text/html" id="settings-content-1">
         <h3>KC3Kai Settings</h3>
-        <form>
+        <div class="settings-group">
           <div class="form-check">
             <input class="form-check-input" id="kc3openstartpage" type="checkbox" data-bind="checked: self.kc3OpenStartPage"></input>
             <label class="form-check-label" for="kc3openstartpage">Auto-open start page</label>
@@ -69,26 +82,28 @@
             <input class="form-check-input" id="kc3openstratroom" type="checkbox" data-bind="checked: self.kc3OpenStratRoom"></input>
             <label class="form-check-label" for="kc3openstratroom">Auto-open strategy room</label>
           </div>
+        </div>
+        <div class="settings-group">
           <div class="form-group">
             <label for="kc3updatechannel">Update channel</label>
-            <select class="form-control" id="kc3updatechannel" data-bind="options: self.kc3UpdateChannels, value: self.kc3UpdateChannel"></select>
+            <select id="kc3updatechannel" class="form-control" data-bind="options: self.kc3UpdateChannels, value: self.kc3UpdateChannel"></select>
           </div>
           <div class="form-group">
             <label for="kc3updateschedule">Update schedule</label>
-            <select class="form-control" id="kc3updateschedule" data-bind="options: self.kc3UpdateSchedules, value: self.kc3UpdateSchedule"></select>
+            <select id="kc3updateschedule" class="form-control" data-bind="options: self.kc3UpdateSchedules, value: self.kc3UpdateSchedule"></select>
           </div>
           <div class="form-check">
             <input class="form-check-input" id="kc3updatesauto" type="checkbox" data-bind="checked: self.kc3UpdateAuto"></input>
             <label class="form-check-label" for="kc3updatesauto">Apply updates without asking</label>
           </div>
-          <div class="form-group">
-            <button class="btn btn-secondary" type="button" data-bind="click: kc3CheckForUpdates">Check for updates</button>
-          </div>
-        </form>
+        </div>
+        <div class="form-group">
+          <button class="btn btn-secondary" type="button" data-bind="click: kc3CheckForUpdates">Check for updates</button>
+        </div>
       </script>
-      <script type="text/html" id="settings-content-1">
+      <script type="text/html" id="settings-content-2">
         <h3>Proxy Settings</h3>
-        <form>
+        <div class="settings-group">
           <div class="form-group">
             <label for="proxyclienthost">Host</label>
             <input id="proxyclienthost" type="text" class="form-control" data-bind="value: self.proxyClientHost" placeholder="Enter IP/host (e.g. 127.0.0.1)">
@@ -101,7 +116,7 @@
             <input class="form-check-input" id="proxyclientenable" type="checkbox" data-bind="checked: self.proxyClientEnable"></input>
             <label class="form-check-label" for="proxyclientenable">Enabled</label>
           </div>
-        </form>
+        </div>
       </script>
     </div>
   </body>

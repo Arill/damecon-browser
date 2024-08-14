@@ -17,6 +17,9 @@ const defaultConfig = {
     state: {
       width: 1200,
       height: 800
+    },
+    style: {
+      theme: 'default'
     }
   },
   kc3kai: {
@@ -419,7 +422,7 @@ class Browser {
       console.log('main.js received message', message, data)
       let result
       if (message == 'get-config-item') {
-        result = config.get(data.value);
+        result = config.get(data.key);
       }
       else if (message == 'get-config') {
         result = config.all;
