@@ -15,6 +15,7 @@
   "author": "Chami <planetarian@users.noreply.github.com>",
   "private": true,
   "dependencies": {
+    "adm-zip": "^0.5.15",
     "configstore": "3.1.5",
     "electron-chrome-context-menu": "^1.0.1",
     "electron-chrome-extensions": "^3.10.1",

@@ -82,6 +82,10 @@ async function loadExtensions(session, extensionsPath) {
     subDirectories
       .filter((dirEnt) => dirEnt.isDirectory())
       .map(async (dirEnt) => {
+        if (dirEnt.name.startsWith('kc3kai-'))
+          return false;
+          
+
         const extPath = path.join(extensionsPath, dirEnt.name)
 
         if (await manifestExists(extPath)) {
@@ -136,7 +140,7 @@ class TabbedBrowserWindow {
   constructor(options) {
     this.session = options.session || session.defaultSession
     this.extensions = options.extensions
-
+    console.log('options.window:', options.window)
     // Can't inheret BrowserWindow
     // https://github.com/electron/electron/issues/23#issuecomment-19613241
     this.window = new BrowserWindow(options.window)
@@ -416,7 +420,6 @@ class Browser {
     settingsUrl = webuiBase + '/settings.html'
     const win = this.createWindow({ initialUrls: [settingsUrl], hideAddressBarFor: [settingsUrl] })
     const extensionsPath = path.join(__dirname, '../../../extensions')
-    const kc3Path = path.join(extensionsPath, 'kc3kai')
 
     ipcMain.handle('webui-message', async (ev, message, data) => {
       console.log('main.js received message', message, data)
@@ -431,14 +434,23 @@ class Browser {
         result = config.set(data.key, data.value);
         if (data.key.startsWith('proxy.client.'))
           await win.applyProxy()
+        if (data.key == 'kc3kai.update.channel') {
+          if (kc3ExtensionId)
+            this.session.removeExtension(kc3ExtensionId)
+          const kc3Path = path.join(extensionsPath, 'kc3kai-' + data.value)
+          await this.updateKc3(extensionsPath, data.value)
+          await this.checkStartKc3(win, extensionsPath, kc3Path)
+        }
       }
       else if (message == 'kc3-doupdate') {
-        await this.updateKc3(kc3Path);
+        await this.updateKc3(extensionsPath, config.get('kc3kai.update.channel'));
       }
       return result;
     })
 
-    await this.updateKc3(kc3Path);
+    const kc3Channel = config.get('kc3kai.update.channel')
+    const kc3Path = path.join(extensionsPath, 'kc3kai-' + kc3Channel)
+    await this.updateKc3(extensionsPath, kc3Channel);
     await this.checkStartKc3(win, extensionsPath, kc3Path);
     
     const installedExtensions = await loadExtensions(this.session, extensionsPath)
@@ -446,24 +458,27 @@ class Browser {
     //win.tabs.show()
   }
 
-  async updateKc3(kc3Path) {
+  async updateKc3(extensionsPath, channel) {
     let kc3updater = new KC3Updater({
       onProcessStarted: this.onProcessStarted.bind(this),
       onProcessProgress: this.onProcessProgress.bind(this),
       onProcessCompleted: this.onProcessCompleted.bind(this)
     })
-    await kc3updater.update(kc3Path)
+    await kc3updater.update(extensionsPath, channel)
   }
 
   async checkStartKc3(win, extensionsPath, kc3Path) {
     const kc3SrcPath = path.join(kc3Path, 'src')
+    if (fsSync.existsSync(kc3SrcPath))
+      kc3Path = kc3SrcPath
 
     // once we're updated and kc3 is loaded, remove the default new tab page
     // and open the kc3 start page + strat room
-    const kc3 = await this.session.loadExtension(kc3SrcPath)
+
+    const kc3 = await this.session.loadExtension(kc3Path)
     const installedExtensions = await loadExtensions(this.session, extensionsPath)
     if (kc3) {
-      console.log('KC3Kai loaded!')
+      console.log('KC3Kai loaded! ID: ', kc3.id)
 
       // open KC3 start page
       kc3ExtensionId = kc3.id
@@ -505,7 +520,8 @@ class Browser {
         height: windowState?.height || defaultConfig.window.state.height,
         frame: false,
         webPreferences: {
-          contextIsolation: true
+          contextIsolation: true,
+          nodeIntegrationInWorker: true
           //, enableRemoteModule: true
         },
         icon: path.join(__dirname, 'icon.ico')
