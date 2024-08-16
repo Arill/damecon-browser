@@ -1,4 +1,4 @@
-# damecon-browser
+# ![Damecon icon](./packages/shell/browser/ui/assets/icons/damecon_icon_48.png) damecon-browser
 
 A minimal, tabbed web browser for playing Kantai Collection, with integrated KC3Kai and KCCacheProxy support.
 
@@ -6,7 +6,7 @@ A minimal, tabbed web browser for playing Kantai Collection, with integrated KC3
 
 ## Usage
 
-### From a Release build:
+###  From a Release build:
 Download the `damecon-browser-*-win.zip`, extract it to an empty folder, and run `damecon-browser.exe`.
 
 ### From source code, using `yarn`:
@@ -20,7 +20,7 @@ yarn
 yarn start
 ```
 
-### Install extensions
+### 🔌 Install extensions
 
 Unpacked (NOT `.crx`) extensions inside `./extensions` will be loaded automatically.
 - Currently only supports extensions using Manifest v2.
@@ -28,11 +28,40 @@ Unpacked (NOT `.crx`) extensions inside `./extensions` will be loaded automatica
 
 There are a few plugins bundled with the Release builds. It is safe to remove them, but attempting to update them will likely not work.
 
-### Configure settings
+### ⚙️ Configure settings
 
-On first launch, the settings page will open, it will download the latest Release version of KC3Kai, and the KC3 Start page will open automatically.
+On first launch, the settings page will open.
+
+It will automatically begin downloading the latest Release version of KC3Kai, and upon completion, the KC3 start page will open.
 
 You can access the Damecon settings again at any time by clicking the damecon icon at the top-left corner of the window.
+
+### KC3Kai Update Configuration
+
+The KC3Kai section in the settings page allows you to configure how KC3 is updated.
+
+You can select from three different update channels: `release`, `master`, and `develop`.
+- It is recommended to remain on the `release` channel, for the most stable experience.
+- `master` and `develop` contain code actively in development, and may be unstable.
+  - If using one of these two channels, the initial update may take several minutes to complete.
+- Different channels are stored independently and have their own separate profiles.
+  - You can switch between channels at any time, and those channels won't need to be re-downloaded.
+  - Switching channels will automatically unload the old channel's extension and load the new one in.
+  - To remove the files for a channel, simply delete the associated `kc3kai-*` folder within `./extensions`.
+
+## ⚠️ Notice
+
+#### Damecon is NOT intended to be used as a general-purpose browser.
+
+Damecon is designed for one purpose only, and that is playing KanColle.
+
+Damecon is built upon Electron, and lacks many of the security features of major browsers. Plus, I have no idea what I'm doing.
+
+Seriously, I've literally never worked with Electron before. There's some real spaghetti-tier code going on here. Do you really wanna put your trust in that?
+
+#### If you use Damecon for any activities involving sensitive information, you do so at your own risk.
+
+
 
 ## Features
 
