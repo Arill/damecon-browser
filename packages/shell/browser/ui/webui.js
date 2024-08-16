@@ -26,22 +26,6 @@ class WebUI {
       maximizeButton: $('#maximize'),
       closeButton: $('#close'),
     }
-    
-    ipc.on('webui-message', (ev, data) => {
-      /*if (data.message === 'tabs-hidden') {
-        if (data.value == true) {
-          this.$.topBar.classList.add('tabui-hidden')
-          this.activeTabId = -1;
-        }
-        else {
-          this.$.topBar.classList.remove('tabui-hidden')
-        }
-        this.renderTabs();
-      }
-      else
-      */ alert('webui.js received unknown webui-message:\n' + JSON.stringify(data))
-    })
-
 
     this.$.createTabButton.addEventListener('click', () => chrome.tabs.create())
     this.$.goBackButton.addEventListener('click', () => chrome.tabs.goBack())
@@ -60,36 +44,59 @@ class WebUI {
       })
     )
     this.$.closeButton.addEventListener('click', () => chrome.windows.remove())
+    
+    // Received message from main.js
+    ipc.on('webui-message', (ev, msg) => {
+      console.log('webui.js received message from main.js', msg)
+      if (msg?.type) {
+        switch (msg.type) {
+          case 'status-kc3-is-updating':
+            chrome.runtime.sendMessage(msg);
+            break;
+          default:
+            alert('webui.js received unknown webui-message type:\n' + JSON.stringify(msg))
+            break;
+        }
+      }
+      else alert('webui.js received unknown webui-message:\n' + JSON.stringify(msg))
+    })
 
-    chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    // Received message from settings.js/new-tab.js
+    chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
       (async () => {
-        console.log('webui.js received message')
+        console.log('webui.js received message from frontend', msg)
         let result;
         try {
-          if (request.message === 'get-config') {
-            result = await ipc.send('webui-message', 'get-config');
+          switch (msg.type) {
+            case 'get-config':
+              result = await ipc.send('webui-message', 'get-config');
+              break;
+            case 'get-config-item':
+              result = await ipc.send('webui-message', 'get-config-item', {key: msg.data.key});
+              break;
+            case 'set-config-item':
+              result = await ipc.send('webui-message', 'set-config-item', {key: msg.data.key, value: msg.data.value});
+              if (msg.data.key == 'window.style.theme') {
+                this.$.body.dataset.colorTheme = msg.data.value;
+              }
+              else if (msg.data.key == 'window.style.brightness') {
+                this.$.body.dataset.brightness = msg.data.value;
+              }
+              break;
+            case 'kc3-doupdate':
+            case 'kc3-get-isupdating':
+              result = await ipc.send('webui-message', msg.type);
+              break;
+            default:
+              throw new Error(`Unknown message type ${msg.type || '(none)'}`);
           }
-          else if (request.message === 'get-config-item') {
-            result = await ipc.send('webui-message', 'get-config-item', {key: request.data.key});
-          }
-          else if (request.message === 'set-config-item') {
-            result = await ipc.send('webui-message', 'set-config-item', {key: request.data.key, value: request.data.value});
-            if (request.data.key == 'window.style.theme') {
-              this.$.body.dataset.colorTheme = request.data.value;
-            }
-            else if (request.data.key == 'window.style.brightness') {
-              this.$.body.dataset.brightness = request.data.value;
-            }
-          }
-          else if (request.message === 'kc3-doupdate') {
-            result = await ipc.send('webui-message', 'kc3-doupdate');
-          }
-          else throw new Error(`Unknown message type ${request.message || '(none)'}`);
           
-          sendResponse({result, complete: true});
+          console.log('webui.js sending response', result)
+          sendResponse({ result, complete: true});
         }
-        catch (err) {
-          sendResponse({complete: false});
+        catch (error) {
+          console.log('webui.js encountered an error retrieving a response to a message', error)
+          sendResponse({ error, complete: false });
         }
       })();
       return true;

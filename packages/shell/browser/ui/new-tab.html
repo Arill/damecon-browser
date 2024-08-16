@@ -3,35 +3,69 @@
   <head>
     <meta charset="utf-8" />
     <title>New Tab</title>
-    <style>
-      body {
-        font-size: 16px;
-      }
-    </style>
+    <script type="text/javascript" src="assets/js/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" src="assets/js/popper.min.js"></script>
+    <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="webui.css" />
+    <link rel="stylesheet" href="new-tab.css" />
+
+    <link rel="icon" href="assets/icons/damecon_icon_48.png" />
   </head>
   <body>
-    <h1><a href="https://github.com/planetarian/damecon">Damecon</a></h1>
-    <ul>
-      <li><a href="https://en.kancollewiki.net">English KanColle Wiki</a></li>
-      <li><a href="https://wikiwiki.jp/kancolle">Japanese KanColle Wiki</a></li>
-      <li><a href="https://tsunkit.net">TsunKit</a> KanColle tools by Chami
-        <ul>
-          <li><a href="https://tsunkit.net/nav">KCNav</a> - Data analysis suite powered by <a href="https://tsundb.kc3.moe">TsunDB</a></li>
-          <li><a href="https://tsunkit.net/quests">KC Mission Control</a> - Quest tracker</li>
-          <li><a href="https://tsunkit.net/dex">KCDex</a> - KC stream aggregator</li>
-          <li><a href="https://tsunkit.net/fleet">Fleet Roster</a> - Kandex tracker & badge generator</li>
-        </ul>
-      </li>
-      <li><a href="https://db.kcwiki.cn/drop">poi-statistics</a> - User-submitted drop data</li>
-      <li>KanColle tools by fourinone
-        <ul>
-          <li><a href="https://kc3kai.github.io/kancolle-replay/simulator.html">Sortie Simulator</a></li>
-          <li><a href="https://kc3kai.github.io/kancolle-replay/battleplayer.html">Battle Replayer</a></li>
-          <li><a href="https://fourinone41.github.io/kancolle-replay/droptables.html">Drop Tables</a></li>
-        </ul>
-      </li>
-      <li><a href="https://noro6.github.io/kc-web">Aerial Combat Simulator</a></li>
-      <li><a href="http://akashi-list.me">Akashi Improvement List</a></li>
-    </ul>
+    <div id="root">
+
+      <div class="content">
+        <div class="header">
+          <div class="icon"></div>
+          <div class="title"><h2>Damecon</h2></div>
+        </div>
+        <div class="links">
+          <div class="col">
+            <div>
+              <h6><a href="https://en.kancollewiki.net">English KanColle Wiki</a></h6>
+            </div>
+            <div>
+              <h6><a href="https://wikiwiki.jp/kancolle">Japanese KanColle Wiki</a></h6>
+            </div>
+            <div>
+              <h6><a href="https://zh.kcwiki.cn">Chinese KanColle Wiki</a></h6>
+              <ul>
+                <li><a href="https://db.kcwiki.cn/drop">poi-statistics</a> - User-submitted drop data</li>
+              </ul>
+            </div>
+            <div>
+              <h6><a href="https://noro6.github.io/kc-web">Aerial Combat Simulator</a></h6>
+            </div>
+            <div>
+              <h6><a href="http://akashi-list.me">Akashi Improvement List</a></h6>
+            </div>
+            <div>
+              <h6><a href="https://github.com/planetarian/damecon-browser">Damecon</a> on GitHub</h6>
+            </div>
+          </div>
+          <div class="col">
+            <div>
+              <h6><a href="https://tsunkit.net">TsunKit</a> KanColle tools by Chami</h6>
+              <ul>
+                <li><a href="https://tsunkit.net/nav">KCNav</a> - Data analysis suite powered by <a href="https://tsundb.kc3.moe">TsunDB</a></li>
+                <li><a href="https://tsunkit.net/quests">KC Mission Control</a> - Quest tracker</li>
+                <li><a href="https://tsunkit.net/dex">KCDex</a> - KC stream aggregator</li>
+                <li><a href="https://tsunkit.net/fleet">Fleet Roster</a> - Fleet manager/badge maker</li>
+              </ul>
+            </div>
+            <div>
+              <h6>KanColle tools by fourinone</h6>
+              <ul>
+                <li><a href="https://kc3kai.github.io/kancolle-replay/simulator.html">Sortie Simulator</a></li>
+                <li><a href="https://kc3kai.github.io/kancolle-replay/battleplayer.html">Battle Replayer</a></li>
+                <li><a href="https://fourinone41.github.io/kancolle-replay/droptables.html">Drop Tables</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

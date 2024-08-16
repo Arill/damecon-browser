@@ -1,4 +1,3 @@
-const { app, BrowserWindow } = require('electron');
 const path = require('node:path');
 const fs = require('fs');
 const fsAsync = fs.promises
@@ -7,7 +6,6 @@ const { finished } = require('stream/promises');
 const AdmZip = require('adm-zip')
 const git = require('isomorphic-git');
 const http = require('isomorphic-git/http/node');
-const { error } = require('node:console');
 
 let self;
 
@@ -58,15 +56,15 @@ class KC3Updater {
         const updatePhases = 7;
         let updatePhase = 0;
 
-        const dir = path.join(extensionsPath, 'kc3kai-' + channel)
-        const updateProgress = () => undefined;// updateProcess.progress('', ++updatePhase, updatePhases);
-
-        console.log(`kc3updater.js: kc3 location ${dir} channel ${channel}`);
-        
-        if (!['release', 'master', 'develop'].includes(channel))
-             throw new Error(`kc3updater.js: Invalid update channel ${channel}`);
-
         try {
+            const dir = path.join(extensionsPath, 'kc3kai-' + channel)
+            const updateProgress = () => undefined;// updateProcess.progress('', ++updatePhase, updatePhases);
+
+            console.log(`kc3updater.js: kc3 location ${dir} channel ${channel}`);
+            
+            if (!['release', 'master', 'develop'].includes(channel))
+                throw new Error(`kc3updater.js: Invalid update channel ${channel}`);
+
             if (channel == 'release') {
                 const updateCheckProcess = self.newProcess('Checking for updates');
                 const releaseData = await (await fetch('http://api.github.com/repos/kc3kai/kc3kai/releases/latest')).json();

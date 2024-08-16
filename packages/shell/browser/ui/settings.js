@@ -1,44 +1,3 @@
-const sendMessage = function(message, data) {
-    return new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage({message, data}, (response) => {
-            if (response?.complete) {
-                resolve(response.result);
-            }
-            else {
-                reject('settings.js failed to send message');
-            }
-        });
-    });
-};
-
-const configStore = {
-    set: async function (key, value) {
-        return await sendMessage('set-config-item', {key, value});
-    },
-    get: async function (key) {
-        return await sendMessage('get-config-item', {key});
-    },
-    all: async function () {
-        return await sendMessage('get-config');
-    },
-
-};
-
-const access = function(o, s) {
-    s = s.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
-    s = s.replace(/^\./, '');           // strip a leading dot
-    var a = s.split('.');
-    for (var i = 0, n = a.length; i < n; ++i) {
-        var k = a[i];
-        if (o === Object(o) && k in o) {
-            o = o[k];
-        } else {
-            return;
-        }
-    }
-    return o;
-}
-
 this.viewModel = function() {
     const self = this;
     self.configPages = ko.observableArray([
@@ -93,8 +52,8 @@ this.viewModel = function() {
 
     self.selectedConfigPage = ko.observable(0);
 
-    self.windowStyleThemes = [ 'default', 'daybreak' ];
-    self.windowStyleBrightnesses = [ 'light', 'dark' ];
+    self.windowStyleThemes = [ 'andra', 'daybreak', 'savatieri', 'taiha', 'zuiun' ];
+    self.windowStyleBrightnesses = [ 'system', 'light', 'dark' ];
     self.kc3UpdateChannels = [ 'release', 'master', 'develop' ];
     self.kc3UpdateSchedules = [ 'startup', 'daily', 'weekly', 'manual' ];
 
@@ -133,6 +92,41 @@ this.viewModel = function() {
     self.windowStyleTheme.subscribe((newValue) => document.querySelector('body').dataset.colorTheme = newValue)
     self.windowStyleBrightness.subscribe((newValue) => document.querySelector('body').dataset.brightness = newValue)
 
-    self.fetchConfig();
+    self.kc3IsUpdating = ko.observable(false);
+    self.kc3UpdatingChannel = ko.observable('');
+    self.canSetKc3Channel = ko.computed(() => !self.kc3IsUpdating());
+    self.canUpdateKc3 = ko.computed(() => !self.kc3IsUpdating() && !!self.kc3UpdateChannel());
+    self.canSetKc3Channel.subscribe(newValue => console.log('canSetKc3Channel:', newValue));
+    self.canUpdateKc3.subscribe(newValue => console.log('canUpdateKc3:', newValue));
+
+    chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
+        (async () => {
+            console.log('settings.js received message from webui.js', msg);
+            let result;
+            try {
+                switch (msg.type) {
+                    case 'status-kc3-is-updating':
+                        self.kc3IsUpdating(msg.data.isUpdating);
+                        self.kc3UpdatingChannel(msg.data.channel);
+                        break;
+                    default:
+                        throw new Error(`Unknown message type ${msg.type || '(none)'}`);
+                }
+                sendResponse({ result, complete: true });
+            }
+            catch (error) {
+                sendResponse({ error, complete: false });
+            }
+        })();
+        return true;
+    });
+
+    init();
+}
+const init = async function() {
+    await self.fetchConfig();
+    const updateStatus = await sendMessage('kc3-get-isupdating');
+    self.kc3IsUpdating(updateStatus.isUpdating);
+    self.kc3UpdatingChannel(updateStatus.channel);
 }
 $(document).ready(() => ko.applyBindings(this.viewModel));

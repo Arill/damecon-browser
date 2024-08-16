@@ -1,38 +1,69 @@
 :root {
   /* electron-chrome-extensions colors */
   --browser-action-badge-outline: var(--tab-color);
+  --control-hover-bg-color: #ffffff17;
+  --control-text-color: #ecececc0;
+  --chrome-text-color: #ececec;
 }
 
-body[data-color-theme='default'] {
+body[data-color-theme='andra'] {
   --chrome-fg-color: #0C4C7C;
   --chrome-mid-color: #083A60;
   --chrome-bg-color: #062A46;
-  --chrome-text-color: #ececec;
-  --toolbar-control-color: #d597ce;
-  --control-text-color: #ececec;
-  --control-hover-bg-color: #ffffff17;
 }
 
 body[data-color-theme='daybreak'] {
+  --chrome-fg-color: #7d6180;
+  --chrome-mid-color: #695069;
+  --chrome-bg-color: #452c4b;
+}
+
+body[data-color-theme='savatieri'] {
+  --chrome-fg-color: #b04858;
+  --chrome-mid-color: #7b343e;
+  --chrome-bg-color: #612931;
+}
+
+body[data-color-theme='taiha'] {
+  --chrome-fg-color: #aa1d1d;
+  --chrome-mid-color: #84141c;
+  --chrome-bg-color: #410B13;
+}
+
+body[data-color-theme='zuiun'] {
+  --chrome-fg-color: #356B40;
+  --chrome-mid-color: #204626;
+  --chrome-bg-color: #142A1C;
+}
+
+body[data-color-theme='electron-shell'] {
   --chrome-fg-color: #745c97;
   --chrome-mid-color: #544a79;
   --chrome-bg-color: #39375b;
-  --chrome-text-color: #ececec;
-  --toolbar-control-color: #d597ce;
-  --control-text-color: #ececec;
-  --control-hover-bg-color: #ffffff17;
 }
 
-body[data-brightness='light'] {
-  --content-bg-color: #f7f7f7;
-  --content-fg-color: #ffffff;
-  --content-text-color: #202020;
+@media (prefers-color-scheme: light) {
+  :root {
+    --content-bg-color: #f7f7f7;
+    --content-fg-color: #ffffff;
+    --content-text-color: #202020;
+    --content-link-color: #1692f2;
+    --content-link-color-hover: #1056b2;
+    --content-link-color-active: #1692f2;
+    --content-link-color-visited: #1692f2;
+  }
 }
 
-body[data-brightness='dark'] {
-  --content-bg-color: #323232;
-  --content-fg-color: #3A3A3A;
-  --content-text-color: #ececec;
+@media (prefers-color-scheme: dark) {
+  :root {
+    --content-bg-color: #323232;
+    --content-fg-color: #3A3A3A;
+    --content-text-color: #ececec;
+    --content-link-color: #4DB2FF;
+    --content-link-color-hover: #80C8FF;
+    --content-link-color-active: #4DB2FF;
+    --content-link-color-visited: #4DB2FF;
+  }
 }
 
 *, *:before, *:after {
@@ -53,6 +84,19 @@ html {
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
   font-size: 16px;
+}
+
+a {
+  color: var(--content-link-color);
+}
+a:hover {
+  color: var(--content-link-color-hover);
+}
+a:active {
+  color: var(--content-link-color-active);
+}
+a:visited {
+  color: var(--content-link-color-visited);
 }
 
 ul {

@@ -2,14 +2,14 @@ const path = require('path')
 const fsSync = require('fs')
 const url = require('url')
 const fs = fsSync.promises
-const { app, session, BrowserWindow, globalShortcut, ipcMain } = require('electron')
+const { app, session, BrowserWindow, globalShortcut, ipcMain, nativeTheme } = require('electron')
 const ConfigStore = require('configstore')
 
 const { Tabs } = require('./tabs')
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 const { setupMenu } = require('./menu')
 const { buildChromeContextMenu } = require('electron-chrome-context-menu')
-const { KC3Updater } = require('./kc3updater.js')
+const { Worker } = require('worker_threads')
 
 const packageJson = JSON.parse(fsSync.readFileSync('package.json', 'utf8'));
 const defaultConfig = {
@@ -19,13 +19,14 @@ const defaultConfig = {
       height: 800
     },
     style: {
-      theme: 'default'
+      theme: 'andra',
+      brightness: 'system'
     }
   },
   kc3kai: {
     update: {
       channel: 'release',
-      schedule: 'startup',
+      schedule: 'daily',
       auto: true
     },
     startup: {
@@ -43,6 +44,9 @@ const defaultConfig = {
   }
 }
 const config = new ConfigStore(packageJson.name, defaultConfig, {globalConfigPath: true});
+
+const rootPath = app.isPackaged ? app.getAppPath() : __dirname;
+const extensionsPath = path.join(__dirname, '../../../extensions')
 
 app.commandLine.appendSwitch("force-gpu-mem-available-mb", "10000")
 app.commandLine.appendSwitch("force-gpu-rasterization")
@@ -302,51 +306,6 @@ class Browser {
     return window ? this.getWindowFromBrowserWindow(window) : null
   }
 
-  processes = {};
-  onProcessStarted(name) {
-    console.log(`Process started: ${name}`)
-    /*
-    let process = this.processes[name]
-    if (process) throw new Error(`Process '${name}' already in progress.`);
-    this.processes[name] = new ProgressBar({
-      indeterminate: false,
-      text: name,
-      detail: 'Please wait...',
-      maxValue: 1.001, // prevent it from closing automatically when it reaches 100%
-      browserWindow: {
-        parent: this.progressBarParent
-      }
-    });/**/
-  }
-  onProcessProgress(name, phase, current, total) {
-    if (total && total >= current) {
-      const progressFormatted = new Intl.NumberFormat(undefined, { maximumSignificantDigits: 3 }).format(current / total * 100);
-      console.log(`Process progress: ${name} (${phase}) - ${current}/${total} (${progressFormatted}%)`)
-    }
-    else {
-      console.log(`Process progress: ${name} - waiting...`)
-    }
-    /*
-    let process = this.processes[name]
-    if (!process) return;
-    if (total && total >= current) {
-      process.detail = `${phase}: ${current} of ${total} (${progressFormatted}%)...`;
-      process.value = current / total;
-    } else {
-      process.detail = 'Just a moment.';
-      process.value = 0;
-    }/**/
-  }
-  onProcessCompleted(name) {
-    console.log(`Process completed: ${name}`)
-    /*
-    let process = this.processes[name]
-    if (!process) return;
-    process.setCompleted();
-    process.close();
-    delete this.processes[name];
-    /**/
-  }
 
   async init() {
     this.initSession()
@@ -414,87 +373,123 @@ class Browser {
     const webuiExtension = await this.session.loadExtension(path.join(__dirname, 'ui'))
     webuiExtensionId = webuiExtension.id
     
+    // theme handling
+    const bright = config.get('window.style.brightness') || 'system';
+    nativeTheme.themeSource = bright;
+    nativeTheme.on('updated', ev => {
+      console.log('nativeTheme.updated', ev)
+    });
+    
     // initial window creation
     const webuiBase = 'chrome-extension://' + webuiExtensionId
     newTabUrl = webuiBase + '/new-tab.html'
     settingsUrl = webuiBase + '/settings.html'
     const win = this.createWindow({ initialUrls: [settingsUrl], hideAddressBarFor: [settingsUrl] })
-    const extensionsPath = path.join(__dirname, '../../../extensions')
 
-    ipcMain.handle('webui-message', async (ev, message, data) => {
-      console.log('main.js received message', message, data)
+    // load non-kc3 extensions
+    const installedExtensions = await loadExtensions(this.session, extensionsPath)
+
+    // set up kc3 update worker thread
+    this.kc3UpdateWorker = new Worker(path.join(rootPath, './kc3update-worker.js'))
+    this.kc3UpdateWorker.on('message', async msg => {
+      console.log('main.js received message from KC3 update worker', msg)
+      // msg: { type, data }
+      if (!msg?.type)
+        throw new Error('Messages sent from worker must be in the format { type, data }');
+      switch (msg.type) {
+        case 'status-kc3-is-updating':
+          this.kc3IsUpdating = msg.data.isUpdating
+          this.kc3UpdatingChannel = msg.data.channel
+          win.webContents.send('webui-message', {type: 'status-kc3-is-updating', data: msg.data})
+          break;
+        case 'error-do-update':
+          break;
+        case 'update-process-started':
+          break;
+        case 'update-process-progress':
+          break;
+        case 'update-process-completed':
+          // TODO: update UI
+          
+          if (msg.data.name === 'KC3 Update') {
+            const channel = this.kc3UpdatingChannel;
+            const kc3Path = path.join(extensionsPath, 'kc3kai-' + channel)
+            await config.set('kc3kai.update.time.' + channel, Date.now())
+            await this.checkStartKc3(win, kc3Path)
+          }
+          break;
+        default:
+            throw new Error(`Unknown message type ${msg.type}`);
+      }
+    })
+
+    // Messages from webui/settings
+    ipcMain.handle('webui-message', async (ev, type, data) => {
+      console.log('main.js received message from webui.js', type, data)
       let result
-      if (message == 'get-config-item') {
-        result = config.get(data.key);
-      }
-      else if (message == 'get-config') {
-        result = config.all;
-      }
-      else if (message == 'set-config-item') {
-        result = config.set(data.key, data.value);
-        if (data.key.startsWith('proxy.client.'))
-          await win.applyProxy()
-        if (data.key == 'kc3kai.update.channel') {
-          if (kc3ExtensionId)
-            this.session.removeExtension(kc3ExtensionId)
-          const kc3Path = path.join(extensionsPath, 'kc3kai-' + data.value)
-          await this.updateKc3(extensionsPath, data.value)
-          await this.checkStartKc3(win, extensionsPath, kc3Path)
-        }
-      }
-      else if (message == 'kc3-doupdate') {
-        await this.updateKc3(extensionsPath, config.get('kc3kai.update.channel'));
+      switch (type) {
+        case 'get-config-item':
+          result = config.get(data.key)
+          break
+        case 'get-config':
+          result = config.all
+          break
+        case 'set-config-item':
+          result = config.set(data.key, data.value)
+          if (data.key.startsWith('proxy.client.'))
+            await win.applyProxy()
+          else if (data.key == 'kc3kai.update.channel') {
+            if (kc3ExtensionId)
+              this.session.removeExtension(kc3ExtensionId)
+            await this.updateKc3IfScheduled(win)
+          }
+          else if (data.key === 'window.style.brightness') {
+            nativeTheme.themeSource = data.value;
+          }
+
+          break
+        case 'kc3-doupdate':
+          await this.updateKc3(config.get('kc3kai.update.channel'))
+          break
+        case 'kc3-get-isupdating':
+          result = { isUpdating: this.kc3IsUpdating, channel: this.kc3UpdatingChannel }
+          break
       }
       return result;
     })
 
-    const kc3Channel = config.get('kc3kai.update.channel')
-    const kc3Path = path.join(extensionsPath, 'kc3kai-' + kc3Channel)
-    await this.updateKc3(extensionsPath, kc3Channel);
-    await this.checkStartKc3(win, extensionsPath, kc3Path);
-    
-    const installedExtensions = await loadExtensions(this.session, extensionsPath)
-
-    //win.tabs.show()
+    await this.updateKc3IfScheduled(win)
   }
 
-  async updateKc3(extensionsPath, channel) {
-    let kc3updater = new KC3Updater({
-      onProcessStarted: this.onProcessStarted.bind(this),
-      onProcessProgress: this.onProcessProgress.bind(this),
-      onProcessCompleted: this.onProcessCompleted.bind(this)
-    })
-    await kc3updater.update(extensionsPath, channel)
-  }
-
-  async checkStartKc3(win, extensionsPath, kc3Path) {
-    const kc3SrcPath = path.join(kc3Path, 'src')
-    if (fsSync.existsSync(kc3SrcPath))
-      kc3Path = kc3SrcPath
-
-    // once we're updated and kc3 is loaded, remove the default new tab page
-    // and open the kc3 start page + strat room
-
-    const kc3 = await this.session.loadExtension(kc3Path)
-    const installedExtensions = await loadExtensions(this.session, extensionsPath)
-    if (kc3) {
-      console.log('KC3Kai loaded! ID: ', kc3.id)
-
-      // open KC3 start page
-      kc3ExtensionId = kc3.id
-      kc3StartPageUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/game/direct.html'
-      let startTab
-      if (config.get('kc3kai.startup.openStartPage'))
-        startTab = win.tabs.create({ initialUrl: kc3StartPageUrl })
-      
-      const kc3StratRoomUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/strategy/strategy.html'
-      if (config.get('kc3kai.startup.openStratRoom')) {
-        const stratRoomTab = win.tabs.create({ initialUrl: kc3StratRoomUrl })
-        startTab = startTab || stratRoomTab
+  async updateKc3IfScheduled(win) {
+    // update if configured schedule warrants it
+    const currentChannel = config.get('kc3kai.update.channel')
+    const lastUpdated = config.get('kc3kai.update.time.' + currentChannel)
+    const schedule = config.get('kc3kai.update.schedule')
+    const autoUpdate = config.get('kc3kai.update.auto')
+    const scheduleMap = {
+      'startup': 0,
+      'daily': 1,
+      'weekly': 7,
+      'manual': null
+    }
+    let doUpdate = false
+    if (autoUpdate && (!lastUpdated || scheduleMap[schedule] >= 0)) {
+      if (!lastUpdated)
+        doUpdate = true
+      else {
+        let date = new Date(lastUpdated)
+        date.setDate(date.getDate() + scheduleMap[schedule])
+        doUpdate = date < new Date()
+        console.log('Next KC3 update scheduled for ', date)
       }
+    }
 
-      if (startTab)
-        win.tabs.select(startTab.id)
+    if (doUpdate)
+      await this.updateKc3(currentChannel)
+    else {
+      const kc3Path = path.join(extensionsPath, 'kc3kai-' + currentChannel)
+      await this.checkStartKc3(win, kc3Path)
     }
   }
 
@@ -528,6 +523,7 @@ class Browser {
       },
     })
     win.window.on('resize', () => {
+      if (win.window.isMaximized()) return;
       const size = win.window.getSize()
       config.set('window.state.width', size[0]);
       config.set('window.state.height', size[1]);
@@ -596,6 +592,41 @@ class Browser {
       menu.popup()
     })
   }
+
+  async updateKc3 (channel) {
+    this.kc3UpdateWorker.postMessage({type: 'do-update', data: { path: extensionsPath, channel } });
+  }
+
+  async checkStartKc3 (win, kc3Path) {
+    const kc3SrcPath = path.join(kc3Path, 'src')
+    if (fsSync.existsSync(kc3SrcPath))
+      kc3Path = kc3SrcPath
+  
+    // once we're updated and kc3 is loaded, remove the default new tab page
+    // and open the kc3 start page + strat room
+  
+    const kc3 = await this.session.loadExtension(kc3Path)
+    if (kc3) {
+      console.log('KC3Kai loaded! ID: ', kc3.id)
+  
+      // open KC3 start page
+      kc3ExtensionId = kc3.id
+      kc3StartPageUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/game/direct.html'
+      let startTab
+      if (config.get('kc3kai.startup.openStartPage'))
+        startTab = win.tabs.create({ initialUrl: kc3StartPageUrl })
+      
+      const kc3StratRoomUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/strategy/strategy.html'
+      if (config.get('kc3kai.startup.openStratRoom')) {
+        const stratRoomTab = win.tabs.create({ initialUrl: kc3StratRoomUrl })
+        startTab = startTab || stratRoomTab
+      }
+  
+      if (startTab)
+        win.tabs.select(startTab.id)
+    }
+  }
+
 }
 
 module.exports = Browser
