@@ -31,16 +31,24 @@ There are a few plugins bundled with the Release builds. It is safe to remove th
 
 ### ✨ Showcase
 
+
 Configurable KC3Kai autostart/update options:
+
 ![preview image showing KC3Kai configuration options.](./screenshots/update.png)
 
+
 KCCacheProxy client options:
+
 ![preview image showing KCCacheProxy client options.](./screenshots/proxy.png)
 
+
 Themes:
+
 ![preview image showing theme options.](./screenshots/themes.png)
 
+
 New Tab launch page:
+
 ![preview image showing new tab page.](./screenshots/newtab.png)
 
 ### 🚀 Current
