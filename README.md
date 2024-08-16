@@ -6,10 +6,10 @@ A minimal, tabbed web browser for playing Kantai Collection, with integrated KC3
 
 ## Usage
 
-#### From a Release build:
+### From a Release build:
 Download the `damecon-browser-*-win.zip`, extract it to an empty folder, and run `damecon-browser.exe`.
 
-#### From source code, using `yarn`:
+### From source code, using `yarn`:
 ```bash
 # Get the code
 git clone git@github.com:planetarian/damecon-browser.git
@@ -23,8 +23,9 @@ yarn start
 ### Install extensions
 
 Unpacked (NOT `.crx`) extensions inside `./extensions` will be loaded automatically.
-Currently only supports extensions using Manifest v2.
-Some plugins may not run properly (or at all) due to some extension APIs being unsupported.
+- Currently only supports extensions using Manifest v2.
+- Some plugins may not run properly (or at all) due to some extension APIs being unsupported.
+
 There are a few plugins bundled with the Release builds. It is safe to remove them, but attempting to update them will likely not work.
 
 ## Features
