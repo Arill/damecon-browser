@@ -52,43 +52,40 @@ class KC3Updater {
     }
 
     async update(extensionsPath, channel) {
+        const dir = path.join(extensionsPath, 'kc3kai-' + channel)
+
+        console.log(`kc3updater.js: kc3 location ${dir} channel ${channel}`);
+
+        if (!['release', 'master', 'develop'].includes(channel))
+            throw new Error(`kc3updater.js: Invalid update channel ${channel}`);
+        
         let updateProcess = self.newProcess('KC3 Update');
-        const updatePhases = 8;
-        let updatePhase = 0;
 
-        try {
-            const dir = path.join(extensionsPath, 'kc3kai-' + channel)
-            const updateProgress = () => {
-                updateProcess.progress({phase: '', loaded: ++updatePhase, total: updatePhases});
-            };
-            updateProgress();
+        if (channel == 'release') {
+            const updateCheckProcess = self.newProcess('Checking for updates');
+            const releaseData = await (await fetch('http://api.github.com/repos/kc3kai/kc3kai/releases/latest')).json();
+            const latestVersion = releaseData.name;
+            updateCheckProcess.complete();
 
-            console.log(`kc3updater.js: kc3 location ${dir} channel ${channel}`);
-            
-            if (!['release', 'master', 'develop'].includes(channel))
-                throw new Error(`kc3updater.js: Invalid update channel ${channel}`);
+            const releaseFile = path.join(dir, 'release');
 
-            if (channel == 'release') {
-                const updateCheckProcess = self.newProcess('Checking for updates');
-                const releaseData = await (await fetch('http://api.github.com/repos/kc3kai/kc3kai/releases/latest')).json();
-                const latestVersion = releaseData.name;
-                updateCheckProcess.complete();
-                
-                const releaseFile = path.join(dir, 'release');
-                
-                let localVersion
+            let localVersion
+            try {
+                localVersion = fs.readFileSync(releaseFile);
+            }
+            catch (err) { /* doesn't exist */ }
+
+            console.log(`kc3updater.js: Current: ${localVersion}; latest: ${latestVersion}`)
+            if (localVersion == latestVersion) {
+                console.log('kc3updater.js: Already up to date.');
+            }
+            else {
+                const zipProcess = self.newProcess('Downloading release ' + latestVersion);
                 try {
-                    localVersion = fs.readFileSync(releaseFile);
-                }
-                catch (err) { /* doesn't exist */ }
-
-                console.log(`kc3updater.js: Current: ${localVersion}; latest: ${latestVersion}`)
-                if (localVersion == latestVersion) {
-                    console.log('kc3updater.js: Already up to date.');
-                }
-                else {
-                    const zipProcess = self.newProcess('Downloading update ' + latestVersion);
-                    fs.rmdirSync(dir, { recursive: true, force: true });
+                    try {
+                        fs.rmdirSync(dir, { recursive: true, force: true });
+                    }
+                    catch (err) { }
                     fs.mkdirSync(dir);
                     const zipRes = await fetch(releaseData.assets[0].browser_download_url);
                     const zipFilename = 'kc3kai-release-' + latestVersion + '.zip';
@@ -101,14 +98,26 @@ class KC3Updater {
 
                     fs.rmSync(zipFilePath);
                     fs.writeFileSync(releaseFile, latestVersion);
-                    zipProcess.complete();
                 }
-
+                finally {
+                    zipProcess.complete();
+                    updateProcess.complete();
+                }
             }
-            else {
+
+        }
+        else {
+            const updatePhases = 8;
+            let updatePhase = 0;
+            const updateProgress = () => {
+                updateProcess.progress({ phase: '', loaded: ++updatePhase, total: updatePhases });
+            };
+            try {
+                updateProgress();
+
                 if (!fs.existsSync(dir) || !fs.existsSync(path.join(dir, 'package.json'))) {
                     console.log('Cloning repo...');
-                    
+
                     const kc3CloneProcess = self.newProcess('Cloning repo');
                     await git.clone({
                         fs,
@@ -121,7 +130,7 @@ class KC3Updater {
                     kc3CloneProcess.complete();
 
 
-                    
+
                 }
                 else
                     console.log('Updating existing repo...');
@@ -135,11 +144,11 @@ class KC3Updater {
                 updateProgress();
 
                 // Get current commit
-                let currentCommit = (await git.log({fs, dir, depth: 1}))[0];
+                let currentCommit = (await git.log({ fs, dir, depth: 1 }))[0];
                 // Get current lang commit
                 let currentLangCommit;
                 if (langOk)
-                    currentLangCommit = (await git.log({fs, dir, filepath: langPath, depth: 1}))[0];
+                    currentLangCommit = (await git.log({ fs, dir, filepath: langPath, depth: 1 }))[0];
 
                 updateProgress();
 
@@ -158,7 +167,7 @@ class KC3Updater {
                 updateProgress();
 
                 // Get newest commit
-                let latestCommit = (await git.log({fs, dir, depth: 1}))[0];
+                let latestCommit = (await git.log({ fs, dir, depth: 1 }))[0];
 
                 if (currentCommit.oid != latestCommit.oid || !langOk) {
                     console.log('Pulling KC3Kai...');
@@ -214,12 +223,12 @@ class KC3Updater {
                     } // pull lang
                 } // pull kc3kai
             }
+            finally {
+                updateProcess.complete();
+            }
+        }
 
-            console.log('Done.');
-        }
-        finally {
-            updateProcess.complete();
-        }
+        console.log('Done.');
     }
 }
 

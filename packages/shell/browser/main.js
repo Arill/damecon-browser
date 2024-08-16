@@ -12,7 +12,6 @@ const { buildChromeContextMenu } = require('electron-chrome-context-menu')
 const { Worker } = require('worker_threads')
 const { setTimeout } = require('timers/promises')
 
-const packageJson = JSON.parse(fsSync.readFileSync('package.json', 'utf8'));
 const defaultConfig = {
   window: {
     state: {
@@ -44,9 +43,10 @@ const defaultConfig = {
     }
   }
 }
-const config = new ConfigStore(packageJson.name, defaultConfig, {globalConfigPath: true});
+const config = new ConfigStore('damecon-browser', defaultConfig, {globalConfigPath: true});
 
 const rootPath = app.isPackaged ? app.getAppPath() : __dirname;
+const browserPath = app.isPackaged ? path.join(app.getAppPath(), 'browser') : __dirname;
 const extensionsPath = path.join(__dirname, '../../../extensions')
 
 app.commandLine.appendSwitch("force-gpu-mem-available-mb", "10000")
@@ -153,7 +153,10 @@ class TabbedBrowserWindow {
 
     const webuiUrl = path.join('chrome-extension://', webuiExtensionId, '/webui.html')
     this.webContents.loadURL(webuiUrl)
-    this.webContents.openDevTools({mode: 'detach'})
+    if (process.env.SHELL_DEBUG) {
+      this.webContents.openDevTools({mode: 'detach'})
+    }
+
 
     this.tabs = new Tabs(this.window, { newTabPageUrl: newTabUrl, hideAddressBarFor: options.hideAddressBarFor })
 
@@ -389,7 +392,7 @@ class Browser {
     const installedExtensions = await loadExtensions(this.session, extensionsPath)
 
     // set up kc3 update worker thread
-    this.kc3UpdateWorker = new Worker(path.join(rootPath, './kc3update-worker.js'))
+    this.kc3UpdateWorker = new Worker(path.join(browserPath, './kc3update-worker.js'))
     this.kc3UpdateWorker.on('message', async msg => {
       //console.log('main.js received message from KC3 update worker', msg)
       // msg: { type, data }
@@ -407,6 +410,7 @@ class Browser {
           win.webContents.send('webui-message', {type: msg.type, data: msg.data})
           break;
         case 'update-process-completed':
+          console.log('Received completion report from KC3 updater.')
           win.webContents.send('webui-message', {type: msg.type, data: msg.data})
           
           if (msg.data.name === 'KC3 Update') {
@@ -600,6 +604,7 @@ class Browser {
     const kc3SrcPath = path.join(kc3Path, 'src')
     if (fsSync.existsSync(kc3SrcPath))
       kc3Path = kc3SrcPath
+    console.log('Searching for KC3Kai in', kc3Path)
   
     // once we're updated and kc3 is loaded, remove the default new tab page
     // and open the kc3 start page + strat room
