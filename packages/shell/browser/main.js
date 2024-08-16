@@ -170,7 +170,7 @@ class TabbedBrowserWindow {
 
     this.tabs.on('tab-navigated', function onTabNavigated(tab, tabUrl) {
       if (tabUrl === kc3StartPageUrl && config.get('kc3kai.startup.openDevtools')) {
-        tab.webContents.openDevTools({ mode: 'bottom', activate: true })
+        tab.webContents.openDevTools({activate: true })
       }
     })
 
@@ -564,6 +564,9 @@ class Browser {
             // don't open a tab by default
             const tab = win.tabs.create()
             tab.loadURL(details.url)
+            if (details.url == kc3StartPageUrl && config.get('kc3kai.startup.openDevtools')) {
+              tab.webContents.openDevTools({activate: true });
+            }
           })
 
           return { action: 'deny' }
