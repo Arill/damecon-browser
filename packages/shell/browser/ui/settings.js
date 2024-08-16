@@ -78,6 +78,8 @@ this.viewModel = function() {
     };
     self.settingsInitialized = ko.observable(false);
 
+    self.processes = ko.observableArray([]);
+
     // initialize viewmodel items
     self.settingsApplySync((key, path) => {
         self[key] = ko.observable();
@@ -99,15 +101,51 @@ this.viewModel = function() {
     self.canSetKc3Channel.subscribe(newValue => console.log('canSetKc3Channel:', newValue));
     self.canUpdateKc3.subscribe(newValue => console.log('canUpdateKc3:', newValue));
 
+    self.addNewProcess = function(data) {
+        const p = {
+            name: data.name,
+            phase: ko.observable(''),
+            current: ko.observable(0),
+            total: ko.observable(0)
+        };
+        p.progressPct = ko.computed(() => {
+            return new Intl.NumberFormat(undefined, { maximumSignificantDigits: 3 }).format(p.current() / p.total() * 100);
+        })
+        p.progress = ko.computed(() => {
+            return p.total() > 0 ? `${p.current()}/${p.total()} (${p.progressPct()}%)` : '';
+        });
+        self.processes.push(p);
+    }
+
     chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
         (async () => {
-            console.log('settings.js received message from webui.js', msg);
             let result;
             try {
                 switch (msg.type) {
                     case 'status-kc3-is-updating':
                         self.kc3IsUpdating(msg.data.isUpdating);
                         self.kc3UpdatingChannel(msg.data.channel);
+                        break;
+                    case 'error-do-update':
+                        // TODO: report the error
+                        break;
+                    case 'update-process-started':
+                        console.log('process started', msg.data.name);
+                        self.addNewProcess(msg.data);
+                        break;
+                    case 'update-process-progress':
+                        const processToUpdate = self.processes().find(p => p.name == msg.data.name);
+                        if (!processToUpdate) {
+                            self.addNewProcess(msg.data);
+                        }
+                        processToUpdate.phase(msg.data.phase);
+                        processToUpdate.current(msg.data.current);
+                        processToUpdate.total(msg.data.total);
+                        break;
+                    case 'update-process-completed':
+                        console.log('process completed', msg.data.name);
+                        const processToRemove = self.processes().find(p => p.name == msg.data.name);
+                        self.processes.remove(processToRemove);
                         break;
                     default:
                         throw new Error(`Unknown message type ${msg.type || '(none)'}`);

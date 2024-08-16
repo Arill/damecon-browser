@@ -10,6 +10,7 @@ const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 const { setupMenu } = require('./menu')
 const { buildChromeContextMenu } = require('electron-chrome-context-menu')
 const { Worker } = require('worker_threads')
+const { setTimeout } = require('timers/promises')
 
 const packageJson = JSON.parse(fsSync.readFileSync('package.json', 'utf8'));
 const defaultConfig = {
@@ -144,7 +145,6 @@ class TabbedBrowserWindow {
   constructor(options) {
     this.session = options.session || session.defaultSession
     this.extensions = options.extensions
-    console.log('options.window:', options.window)
     // Can't inheret BrowserWindow
     // https://github.com/electron/electron/issues/23#issuecomment-19613241
     this.window = new BrowserWindow(options.window)
@@ -251,7 +251,6 @@ class TabbedBrowserWindow {
   };
 
   async applyProxy() {
-    console.log()
     const enable = config.get('proxy.client.enable')
     if (enable) {
       const host = config.get('proxy.client.host')
@@ -392,7 +391,7 @@ class Browser {
     // set up kc3 update worker thread
     this.kc3UpdateWorker = new Worker(path.join(rootPath, './kc3update-worker.js'))
     this.kc3UpdateWorker.on('message', async msg => {
-      console.log('main.js received message from KC3 update worker', msg)
+      //console.log('main.js received message from KC3 update worker', msg)
       // msg: { type, data }
       if (!msg?.type)
         throw new Error('Messages sent from worker must be in the format { type, data }');
@@ -400,16 +399,15 @@ class Browser {
         case 'status-kc3-is-updating':
           this.kc3IsUpdating = msg.data.isUpdating
           this.kc3UpdatingChannel = msg.data.channel
-          win.webContents.send('webui-message', {type: 'status-kc3-is-updating', data: msg.data})
+          win.webContents.send('webui-message', {type: msg.type, data: msg.data})
           break;
         case 'error-do-update':
-          break;
         case 'update-process-started':
-          break;
         case 'update-process-progress':
+          win.webContents.send('webui-message', {type: msg.type, data: msg.data})
           break;
         case 'update-process-completed':
-          // TODO: update UI
+          win.webContents.send('webui-message', {type: msg.type, data: msg.data})
           
           if (msg.data.name === 'KC3 Update') {
             const channel = this.kc3UpdatingChannel;
@@ -425,7 +423,7 @@ class Browser {
 
     // Messages from webui/settings
     ipcMain.handle('webui-message', async (ev, type, data) => {
-      console.log('main.js received message from webui.js', type, data)
+      //console.log('main.js received message from webui.js', type, data)
       let result
       switch (type) {
         case 'get-config-item':
@@ -485,9 +483,10 @@ class Browser {
       }
     }
 
-    if (doUpdate)
+    if (doUpdate) {
+      await setTimeout(1000)
       await this.updateKc3(currentChannel)
-    else {
+    } else {
       const kc3Path = path.join(extensionsPath, 'kc3kai-' + currentChannel)
       await this.checkStartKc3(win, kc3Path)
     }

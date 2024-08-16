@@ -47,10 +47,13 @@ class WebUI {
     
     // Received message from main.js
     ipc.on('webui-message', (ev, msg) => {
-      console.log('webui.js received message from main.js', msg)
       if (msg?.type) {
         switch (msg.type) {
           case 'status-kc3-is-updating':
+          case 'error-do-update':
+          case 'update-process-started':
+          case 'update-process-progress':
+          case 'update-process-completed':
             chrome.runtime.sendMessage(msg);
             break;
           default:
@@ -64,7 +67,6 @@ class WebUI {
     // Received message from settings.js/new-tab.js
     chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
       (async () => {
-        console.log('webui.js received message from frontend', msg)
         let result;
         try {
           switch (msg.type) {
@@ -90,8 +92,6 @@ class WebUI {
             default:
               throw new Error(`Unknown message type ${msg.type || '(none)'}`);
           }
-          
-          console.log('webui.js sending response', result)
           sendResponse({ result, complete: true});
         }
         catch (error) {

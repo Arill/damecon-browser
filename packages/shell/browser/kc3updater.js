@@ -53,12 +53,15 @@ class KC3Updater {
 
     async update(extensionsPath, channel) {
         let updateProcess = self.newProcess('KC3 Update');
-        const updatePhases = 7;
+        const updatePhases = 8;
         let updatePhase = 0;
 
         try {
             const dir = path.join(extensionsPath, 'kc3kai-' + channel)
-            const updateProgress = () => undefined;// updateProcess.progress('', ++updatePhase, updatePhases);
+            const updateProgress = () => {
+                updateProcess.progress({phase: '', loaded: ++updatePhase, total: updatePhases});
+            };
+            updateProgress();
 
             console.log(`kc3updater.js: kc3 location ${dir} channel ${channel}`);
             
