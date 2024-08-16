@@ -49,6 +49,14 @@ You can select from three different update channels: `release`, `master`, and `d
   - Switching channels will automatically unload the old channel's extension and load the new one in.
   - To remove the files for a channel, simply delete the associated `kc3kai-*` folder within `./extensions`.
 
+### Proxy Configuration
+
+Damecon is designed to work seamlessly with KCCacheProxy. Extensions like ProxySwitchy are no longer necessary.
+
+You can configure your KCCP host/port in the `Proxy` section of the settings page.
+
+The `Enabled` checkbox will enable/disable routing KanColle traffic through the proxy.
+
 ## ⚠️ Notice
 
 #### Damecon is NOT intended to be used as a general-purpose browser.
