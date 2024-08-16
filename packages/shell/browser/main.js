@@ -561,7 +561,7 @@ class Browser {
           // https://github.com/electron/electron/issues/33383
           queueMicrotask(() => {
             const win = this.getWindowFromWebContents(webContents)
-            // don't open a tab by default
+            if (!win) return;
             const tab = win.tabs.create()
             tab.loadURL(details.url)
             if (details.url == kc3StartPageUrl && config.get('kc3kai.startup.openDevtools')) {
