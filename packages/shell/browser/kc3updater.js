@@ -58,61 +58,60 @@ class KC3Updater {
 
         if (!['release', 'master', 'develop'].includes(channel))
             throw new Error(`kc3updater.js: Invalid update channel ${channel}`);
-        
+
         let updateProcess = self.newProcess('KC3 Update');
+        try {
 
-        if (channel == 'release') {
-            const updateCheckProcess = self.newProcess('Checking for updates');
-            const releaseData = await (await fetch('http://api.github.com/repos/kc3kai/kc3kai/releases/latest')).json();
-            const latestVersion = releaseData.name;
-            updateCheckProcess.complete();
+            if (channel == 'release') {
+                const updateCheckProcess = self.newProcess('Checking for updates');
+                const releaseData = await (await fetch('http://api.github.com/repos/kc3kai/kc3kai/releases/latest')).json();
+                const latestVersion = releaseData.name;
+                updateCheckProcess.complete();
 
-            const releaseFile = path.join(dir, 'release');
+                const releaseFile = path.join(dir, 'release');
 
-            let localVersion
-            try {
-                localVersion = fs.readFileSync(releaseFile);
-            }
-            catch (err) { /* doesn't exist */ }
+                let localVersion
+                try {
+                    localVersion = fs.readFileSync(releaseFile);
+                }
+                catch (err) { /* doesn't exist */ }
 
-            console.log(`kc3updater.js: Current: ${localVersion}; latest: ${latestVersion}`)
-            if (localVersion == latestVersion) {
-                console.log('kc3updater.js: Already up to date.');
+                console.log(`kc3updater.js: Current: ${localVersion}; latest: ${latestVersion}`)
+                if (localVersion == latestVersion) {
+                    console.log('kc3updater.js: Already up to date.');
+                }
+                else {
+                    const zipProcess = self.newProcess('Downloading release ' + latestVersion);
+                    try {
+                        try {
+                            fs.rmdirSync(dir, { recursive: true, force: true });
+                        }
+                        catch (err) { }
+                        fs.mkdirSync(dir);
+                        const zipRes = await fetch(releaseData.assets[0].browser_download_url);
+                        const zipFilename = 'kc3kai-release-' + latestVersion + '.zip';
+                        const zipFilePath = path.join(dir, zipFilename);
+                        const stream = fs.createWriteStream(zipFilePath, { flags: 'wx' });
+                        await finished(Readable.fromWeb(zipRes.body).pipe(stream));
+
+                        var zip = new AdmZip(zipFilePath);
+                        zip.extractAllTo(dir, true);
+
+                        fs.rmSync(zipFilePath);
+                        fs.writeFileSync(releaseFile, latestVersion);
+                    }
+                    finally {
+                        zipProcess.complete();
+                    }
+                }
+
             }
             else {
-                const zipProcess = self.newProcess('Downloading release ' + latestVersion);
-                try {
-                    try {
-                        fs.rmdirSync(dir, { recursive: true, force: true });
-                    }
-                    catch (err) { }
-                    fs.mkdirSync(dir);
-                    const zipRes = await fetch(releaseData.assets[0].browser_download_url);
-                    const zipFilename = 'kc3kai-release-' + latestVersion + '.zip';
-                    const zipFilePath = path.join(dir, zipFilename);
-                    const stream = fs.createWriteStream(zipFilePath, { flags: 'wx' });
-                    await finished(Readable.fromWeb(zipRes.body).pipe(stream));
-
-                    var zip = new AdmZip(zipFilePath);
-                    zip.extractAllTo(dir, true);
-
-                    fs.rmSync(zipFilePath);
-                    fs.writeFileSync(releaseFile, latestVersion);
-                }
-                finally {
-                    zipProcess.complete();
-                    updateProcess.complete();
-                }
-            }
-
-        }
-        else {
-            const updatePhases = 8;
-            let updatePhase = 0;
-            const updateProgress = () => {
-                updateProcess.progress({ phase: '', loaded: ++updatePhase, total: updatePhases });
-            };
-            try {
+                const updatePhases = 8;
+                let updatePhase = 0;
+                const updateProgress = () => {
+                    updateProcess.progress({ phase: '', loaded: ++updatePhase, total: updatePhases });
+                };
                 updateProgress();
 
                 if (!fs.existsSync(dir) || !fs.existsSync(path.join(dir, 'package.json'))) {
@@ -223,9 +222,9 @@ class KC3Updater {
                     } // pull lang
                 } // pull kc3kai
             }
-            finally {
-                updateProcess.complete();
-            }
+        }
+        finally {
+            updateProcess.complete();
         }
 
         console.log('Done.');
