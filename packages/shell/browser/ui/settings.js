@@ -14,7 +14,8 @@ this.viewModel = function() {
         {
             id: 2,
             name: 'Proxy',
-            faIcon: 'fa-solid fa-circle-nodes'
+            img: 'assets/icons/kccp.png'
+            //faIcon: 'fa-solid fa-circle-nodes'
         }
     ]);
 
