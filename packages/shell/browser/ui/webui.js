@@ -107,6 +107,8 @@ class WebUI {
 
   async init() {
     await this.initTheme()
+    // wait for initial tab to load
+    await sleep(100)
     await this.initTabs()
   }
 
@@ -148,6 +150,7 @@ class WebUI {
     }
 
     chrome.tabs.onCreated.addListener((tab) => {
+      console.log("webui.js onCreated")
       if (tab.windowId !== this.windowId) return
       const newTab = findOrCreateTab(tab.id)
       Object.assign(newTab, tab)
@@ -161,6 +164,7 @@ class WebUI {
     })
 
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, details) => {
+      console.log("webui.js onUpdated")
       const tab = findTab(tabId)
       if (!tab) return
       Object.assign(tab, details)
@@ -230,6 +234,7 @@ class WebUI {
   }
 
   renderTab(tab) {
+    console.log('rendering tab', tab)
     let tabElem = this.$.tabList.querySelector(`[data-tab-id="${tab.id}"]`)
     if (!tabElem) tabElem = this.createTabNode(tab)
 
@@ -270,5 +275,4 @@ class WebUI {
       delete this.$.toolBar.dataset.hidden
   }
 }
-
 window.webui = new WebUI()

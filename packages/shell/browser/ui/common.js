@@ -1,3 +1,8 @@
+//
+// Do not use from webui.js
+// ... I mean you can, but you probably shouldn't
+//
+
 const sendMessage = function(type, data) {
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage({type, data}, (response) => {
@@ -24,6 +29,10 @@ const configStore = {
     },
 };
 
+//
+// Rest are OK to use anywhere
+//
+
 // Access a node of an object tree via dot notation string ('foo.bar.baz')
 const access = function(o, s) {
     s = s.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
@@ -39,3 +48,5 @@ const access = function(o, s) {
     }
     return o;
 }
+
+const sleep = (delayMs) => new Promise((resolve) => setTimeout(resolve, delayMs))

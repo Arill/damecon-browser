@@ -1,6 +1,6 @@
 {
   "name": "damecon-browser",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A minimal browser designed for playing Kantai Collection via KC3Kai.",
   "main": "index.js",
   "scripts": {
@@ -30,7 +30,7 @@
   "build": {
     "productName": "Damecon",
     "appId": "damecon-browser",
-    "artifactName": "${productName}-${version}-${os}.${ext}",
+    "artifactName": "${name}-${version}-${os}.${ext}",
     "directories": {
       "output": "build"
     },
@@ -42,7 +42,7 @@
     ],
     "extraFiles": [],
     "win": {
-      "artifactName": "${productName}-${version}-${os}.${ext}",
+      "artifactName": "${name}-${version}-${os}.${ext}",
       "executableName": "damecon-browser",
       "icon": "icon.ico",
       "target": [
@@ -58,7 +58,7 @@
       "icon": "icon.ico",
       "target": [
         {
-          "target": "7z",
+          "target": "zip",
           "arch": [
             "x64"
           ]

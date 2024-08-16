@@ -157,13 +157,13 @@ class TabbedBrowserWindow {
       this.webContents.openDevTools({mode: 'detach'})
     }
 
-
+    
+    
     this.tabs = new Tabs(this.window, { newTabPageUrl: newTabUrl, hideAddressBarFor: options.hideAddressBarFor })
-
 
     const self = this
 
-    this.tabs.on('tab-created', function onTabCreated(tab, tabUrl) {
+    this.tabs.on('tab-created', function onTabCreated(tab) {
       // Track tab that may have been created outside of the extensions API.
       self.extensions.addTab(tab.webContents, tab.window)
     })
@@ -184,28 +184,7 @@ class TabbedBrowserWindow {
 
     queueMicrotask(async () => {
       await this.applyProxy()
-      // Create initial tab
-      if (options.initialUrls) {
-        let initialTabId
-        for (let i = 0; i < options.initialUrls.length; i++) {
-          const thisUrl = options.initialUrls[i]
-          const tab = self.tabs.create({
-            initialUrl: thisUrl,
-            activate: i === 0,
-            devToolsMode: thisUrl == kc3StartPageUrl ? 'bottom' : undefined
-          })
-          if (i === 0)
-            initialTabId = tab.id
-        }
-        this.tabs.select(initialTabId)
-      }
-      else {
-        const tab = self.tabs.create({
-          initialUrl: newTabUrl,
-          activate: true,
-        })
-        this.tabs.select(tab.id)
-      }
+      this.tabs.create({initialUrl: settingsUrl})
     })
   }
 
@@ -448,7 +427,6 @@ class Browser {
           else if (data.key === 'window.style.brightness') {
             nativeTheme.themeSource = data.value;
           }
-
           break
         case 'kc3-doupdate':
           await this.updateKc3(config.get('kc3kai.update.channel'))

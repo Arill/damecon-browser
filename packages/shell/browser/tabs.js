@@ -98,17 +98,21 @@ class Tabs extends EventEmitter {
     this.tabList.push(tab)
     if (!this.selected)
       this.selected = tab
+
     
+    // added
     if (options && this.hideAddressBarFor.includes(options.initialUrl)) {
       tab.hideToolbar = true
     }
 
+    tab.show()
     const url = options?.initialUrl ?? this.newTabPageUrl
     tab.webContents.loadURL(url)
     tab.webContents.on('did-navigate', (origin, targets) => {
       this.emit('tab-navigated', tab, url)
     })
-    this.emit('tab-created', tab, url)
+    
+    this.emit('tab-created', tab)
     this.select(tab.id)
     return tab
   }
