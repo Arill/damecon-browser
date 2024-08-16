@@ -98,6 +98,7 @@ New Tab launch page:
 - [x] Color and light/dark theme support
 - [x] New Tab page with links to common third-party KanColle resources
 - [ ] Option to ask before installing KC3 updates
+- [ ] 'Custom' channel for managing your own KC3 folder location
 - [ ] Common keyboard shortcuts (F12, Ctrl+T, Ctrl+F4, etc)
 - [ ] Common mouse gestures (Tab middle-click, draggable tabs, Ctrl+scroll, etc)
 - [ ] Link hover URL tooltips
