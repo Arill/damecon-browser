@@ -562,8 +562,8 @@ class Browser {
           queueMicrotask(() => {
             const win = this.getWindowFromWebContents(webContents)
             // don't open a tab by default
-            //const tab = win.tabs.create()
-            //tab.loadURL(details.url)
+            const tab = win.tabs.create()
+            tab.loadURL(details.url)
           })
 
           return { action: 'deny' }
