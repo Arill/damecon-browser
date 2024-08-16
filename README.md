@@ -1,23 +1,19 @@
-# electron-browser-shell
+# damecon-browser
 
-A minimal, tabbed web browser with support for Chrome extensions—built on Electron.
+A minimal, tabbed web browser for playing Kantai Collection, with integrated KC3Kai and KCCacheProxy support.
 
-![browser preview image showing 3 tabs and a youtube video](./screenshot.png)
-
-## Packages
-
-| Name | Description |
-| --- | --- |
-| [shell](./packages/shell) | A minimal, tabbed web browser used as a testbed for development of Chrome extension support. |
-| [electron-chrome-extensions](./packages/electron-chrome-extensions) | Adds additional API support for Chrome extensions to Electron. |
-| [electron-chrome-context-menu](./packages/electron-chrome-context-menu) | Chrome context menu for Electron browsers. |
+![browser preview image showing a typical setup with the game open, KC3Kai visible in the developer tools panel, and some tools open in background tabs.](./screenshots/ingame.png)
 
 ## Usage
 
+#### From a Release build:
+Download the `damecon-browser-*-win.zip`, extract it to an empty folder, and run `damecon-browser.exe`.
+
+#### From source code, using `yarn`:
 ```bash
 # Get the code
-git clone git@github.com:samuelmaddock/electron-browser-shell.git
-cd electron-browser-shell
+git clone git@github.com:planetarian/damecon-browser.git
+cd damecon-browser
 
 # Install and launch the browser
 yarn
@@ -26,44 +22,70 @@ yarn start
 
 ### Install extensions
 
-Load unpacked extensions into `./extensions` then launch the browser.
+Unpacked (NOT `.crx`) extensions inside `./extensions` will be loaded automatically.
+Currently only supports extensions using Manifest v2.
+Some plugins may not run properly (or at all) due to some extension APIs being unsupported.
+There are a few plugins bundled with the Release builds. It is safe to remove them, but attempting to update them will likely not work.
 
-## Roadmap
+## Features
+
+### ✨ Showcase
+
+Configurable KC3Kai autostart/update options:
+![preview image showing KC3Kai configuration options.](./screenshots/update.png)
+
+KCCacheProxy client options:
+![preview image showing KCCacheProxy client options.](./screenshots/proxy.png)
+
+Themes:
+![preview image showing theme options.](./screenshots/themes.png)
+
+New Tab launch page:
+![preview image showing new tab page.](./screenshots/newtab.png)
 
 ### 🚀 Current
 
-- [x] Browser tabs
-- [x] Unpacked extension loader
-- [x] Initial [`chrome.tabs` extensions API](https://developer.chrome.com/extensions/tabs)
-- [x] Initial [extension popup](https://developer.chrome.com/extensions/browserAction) support
-- [ ] Support for common [`chrome.*` extension APIs](https://developer.chrome.com/extensions/devguide)
-- [ ] Robust extension popup support
-- [ ] [Manifest V3](https://developer.chrome.com/docs/extensions/mv3/intro/) support
-- [ ] Respect extension manifest permissions
+- [x] KC3Kai integration
+- [x] Automatic updates for KC3
+- [x] Support both release and in-development versions of KC3
+- [x] Configurable KC3 update schedule (daily/weekly/always/never)
+- [x] Auto-open KC3 start page (with developer tools) and strategy room
+- [x] KCCacheProxy client support
+- [x] Color and light/dark theme support
+- [x] New Tab page with links to common third-party KanColle resources
+- [ ] Option to ask before installing KC3 updates
+- [ ] Common keyboard shortcuts (F12, Ctrl+T, Ctrl+F4, etc)
+- [ ] Common mouse gestures (Tab middle-click, draggable tabs, Ctrl+scroll, etc)
+- [ ] Link hover URL tooltips
+    
 
 ### 🤞 Eventually
 - [ ] Extension management (enable/disable/uninstall)
+- [ ] Application auto-update
 - [ ] .CRX extension loader
-- [ ] Installation prompt UX
-- [ ] [Chrome Web Store](https://chrome.google.com/webstore) extension installer
-- [ ] [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/Microsoft-Edge-Extensions-Home) extension installer
-- [ ] Automatic extension updates
-- [ ] Full support of [`chrome.*` extension APIs](https://developer.chrome.com/extensions/devguide)
-
-### 🤔 Considering
-
-- [ ] Opt-in support for custom `webRequest` blocking implementation
-- [ ] Browser tab discarding
+- [ ] Support for more common [`chrome.*` extension APIs](https://developer.chrome.com/extensions/devguide)
+    - Unlikely as I can't wrap my head around the API wrapper lol
+- [ ] Respect extension manifest permissions
+    - I must reiterate, this is *not* a secure browser
 
 ### ❌ Not planned
 
-- [Chrome Platform App APIs](https://developer.chrome.com/docs/extensions/reference/#platform_apps_apis)
+- Multi-window / detachable tabs
+- Manifest V3
+- Chrome webstore (requires MV3)
+- Advanced general-use browser features from Chrome/Edge/etc
+    - Including password manager and other security features
+- AI integration of any kind (you're welcome)
 
 ## License
 
 GPL-3
 
-For proprietary use, please [contact me](mailto:sam@samuelmaddock.com?subject=electron-browser-shell%20license) or [sponsor me on GitHub](https://github.com/sponsors/samuelmaddock/) under the appropriate tier to [acquire a proprietary-use license](https://github.com/samuelmaddock/electron-browser-shell/blob/master/LICENSE-PATRON.md). These contributions help make development and maintenance of this project more sustainable and show appreciation for the work thus far.
+This project is based on the `electron-browser-shell` project by Samuel Maddock.
+
+The following notice has been retained from the original repository:
+
+> For proprietary use [of electron-browser-shell], please [contact [samuelmaddock]](mailto:sam@samuelmaddock.com?subject=electron-browser-shell%20license) or [sponsor [samuelmaddock] on GitHub](https://github.com/sponsors/samuelmaddock/) under the appropriate tier to [acquire a proprietary-use license](https://github.com/samuelmaddock/electron-browser-shell/blob/master/LICENSE-PATRON.md). These contributions help make development and maintenance of this project more sustainable and show appreciation for the work thus far.
 
 ### Contributor license agreement
 
@@ -73,5 +95,5 @@ no-charge, royalty-free, irrevocable copyright license to reproduce, prepare
 derivative works of, publicly display, publicly perform, sublicense, and
 distribute your contributions and such derivative works.
 
-The owners of the electron-browser-shell project will also be granted the right to relicense the
+The owners of the damecon-browser/electron-browser-shell projects will also be granted the right to relicense the
 contributed source code and its derivative works.
