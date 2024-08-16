@@ -28,6 +28,12 @@ Unpacked (NOT `.crx`) extensions inside `./extensions` will be loaded automatica
 
 There are a few plugins bundled with the Release builds. It is safe to remove them, but attempting to update them will likely not work.
 
+### Configure settings
+
+On first launch, the settings page will open, it will download the latest Release version of KC3Kai, and the KC3 Start page will open automatically.
+
+You can access the Damecon settings again at any time by clicking the damecon icon at the top-left corner of the window.
+
 ## Features
 
 ### ✨ Showcase
