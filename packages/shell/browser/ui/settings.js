@@ -48,14 +48,14 @@ this.viewModel = function() {
     }
 
     self.kc3CheckForUpdates = async function() {
-        await await sendMessage('kc3-doupdate');
+        await sendMessage('kc3-doupdate');
     }
 
     self.selectedConfigPage = ko.observable(0);
 
     self.windowStyleThemes = [ 'andra', 'daybreak', 'savatieri', 'taiha', 'zuiun' ];
     self.windowStyleBrightnesses = [ 'system', 'light', 'dark' ];
-    self.kc3UpdateChannels = [ 'release', 'master', 'develop' ];
+    self.kc3UpdateChannels = [ 'release', 'master', 'develop', 'manual1', 'manual2' ];
     self.kc3UpdateSchedules = [ 'startup', 'daily', 'weekly', 'manual' ];
 
     self.settings = {
@@ -65,6 +65,8 @@ this.viewModel = function() {
         },
         kc3kai: {
             'kc3UpdateChannel': 'kc3kai.update.channel',
+            'kc3Manual1Location': 'kc3kai.manual1Location',
+            'kc3Manual2Location': 'kc3kai.manual2Location',
             'kc3UpdateSchedule': 'kc3kai.update.schedule',
             'kc3UpdateAuto': 'kc3kai.update.auto',
             'kc3OpenStartPage': 'kc3kai.startup.openStartPage',
@@ -116,7 +118,26 @@ this.viewModel = function() {
             return p.total() > 0 ? `${p.current()}/${p.total()} (${p.progressPct()}%)` : '';
         });
         self.processes.push(p);
-    }
+    };
+
+    self.getKc3Location = async function () {
+        const channel = self.kc3UpdateChannel();
+        if (!channel.startsWith('manual')) {
+            console.error('Manual kc3 channel not selected.');
+            return;
+        }
+        const result = await sendMessage('kc3-select-manual-location');
+        if (result.canceled || !result.filePaths.length) return;
+        const path = result.filePaths[0];
+        console.log('Selected kc3 path', path);
+
+        if (channel === 'manual1')
+            self.kc3Manual1Location(path);
+        else if (channel === 'manual2')
+            self.kc3Manual2Location(path);
+        else
+            console.error('Unknown manual kc3 channel', channel)
+    };
 
     chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
         (async () => {

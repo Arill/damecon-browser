@@ -93,6 +93,13 @@ class Tabs extends EventEmitter {
     return this.tabList.find((tab) => tab.id === tabId)
   }
 
+  removeExtensionTabs(extensionId) {
+    console.log('removing tabs for extension', extensionId)
+    console.log('all ids', this.tabList.map((tab) => tab.id));
+    const tabs = this.tabList.filter(tab => tab.webContents.getURL().startsWith(`chrome-extension://${extensionId}/`))
+    tabs.forEach(tab => tab.destroy())
+  }
+
   create(options) {
     const tab = new Tab(this.window)
     this.tabList.push(tab)
@@ -118,6 +125,7 @@ class Tabs extends EventEmitter {
   }
 
   remove(tabId) {
+    console.log('removing tab with id', tabId)
     const tabIndex = this.tabList.findIndex((tab) => tab.id === tabId)
     if (tabIndex < 0) {
       throw new Error(`Tabs.remove: unable to find tab.id = ${tabId}`)

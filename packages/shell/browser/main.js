@@ -2,7 +2,7 @@ const path = require('path')
 const fsSync = require('fs')
 const url = require('url')
 const fs = fsSync.promises
-const { app, session, BrowserWindow, globalShortcut, ipcMain, nativeTheme } = require('electron')
+const { app, session, BrowserWindow, globalShortcut, ipcMain, nativeTheme, dialog } = require('electron')
 const ConfigStore = require('configstore')
 
 const { Tabs } = require('./tabs')
@@ -252,6 +252,7 @@ class TabbedBrowserWindow {
 
 class Browser {
   windows = []
+  currentKc3ExtensionId = null
 
   constructor() {
     app.whenReady().then(this.init.bind(this))
@@ -395,9 +396,14 @@ class Browser {
           win.webContents.send('webui-message', {type: msg.type, data: msg.data})
           
           if (msg.data.name === 'KC3 Update') {
+            const kc3Path = this.getKc3Path()
+            if (!kc3Path) {
+              console.log("No kc3 path provided.")
+              return;
+            }
             const channel = this.kc3UpdatingChannel;
-            const kc3Path = path.join(extensionsPath, 'kc3kai-' + channel)
-            await config.set('kc3kai.update.time.' + channel, Date.now())
+            if (!channel.startsWith('manual'))
+              await config.set('kc3kai.update.time.' + channel, Date.now())
             await this.checkStartKc3(win, kc3Path)
           }
           break;
@@ -408,7 +414,8 @@ class Browser {
 
     // Messages from webui/settings
     ipcMain.handle('webui-message', async (ev, type, data) => {
-      //console.log('main.js received message from webui.js', type, data)
+      console.log('main.js received message from webui.js', type, data)
+
       let result
       switch (type) {
         case 'get-config-item':
@@ -436,6 +443,12 @@ class Browser {
         case 'kc3-get-isupdating':
           result = { isUpdating: this.kc3IsUpdating, channel: this.kc3UpdatingChannel }
           break
+        case 'kc3-select-manual-location':
+          const { canceled, filePaths } = await dialog.showOpenDialog({
+            properties: ['openDirectory']
+          })
+          result = { canceled, filePaths }
+          break
       }
       return result;
     })
@@ -443,9 +456,20 @@ class Browser {
     await this.updateKc3IfScheduled(win)
   }
 
+  getKc3Path() {
+    const currentChannel = config.get('kc3kai.update.channel')
+    let kc3Path
+    if (currentChannel.startsWith('manual'))
+      kc3Path = config.get(`kc3kai.${currentChannel}Location`)
+    else
+      kc3Path = path.join(extensionsPath, 'kc3kai-' + currentChannel)
+    return kc3Path
+  }
+
   async updateKc3IfScheduled(win) {
     // update if configured schedule warrants it
     const currentChannel = config.get('kc3kai.update.channel')
+    const canUpdate = !currentChannel.startsWith('manual')
     const lastUpdated = config.get('kc3kai.update.time.' + currentChannel)
     const schedule = config.get('kc3kai.update.schedule')
     const autoUpdate = config.get('kc3kai.update.auto')
@@ -456,7 +480,7 @@ class Browser {
       'manual': null
     }
     let doUpdate = false
-    if (autoUpdate && (!lastUpdated || scheduleMap[schedule] >= 0)) {
+    if (canUpdate && autoUpdate && (!lastUpdated || scheduleMap[schedule] >= 0)) {
       if (!lastUpdated)
         doUpdate = true
       else {
@@ -471,7 +495,7 @@ class Browser {
       await setTimeout(1000)
       await this.updateKc3(currentChannel)
     } else {
-      const kc3Path = path.join(extensionsPath, 'kc3kai-' + currentChannel)
+      const kc3Path = this.getKc3Path()
       await this.checkStartKc3(win, kc3Path)
     }
   }
@@ -584,6 +608,10 @@ class Browser {
   }
 
   async checkStartKc3 (win, kc3Path) {
+    if (!kc3Path) {
+      console.error('No kc3 path defined.')
+      return;
+    }
     const kc3SrcPath = path.join(kc3Path, 'src')
     if (fsSync.existsSync(kc3SrcPath))
       kc3Path = kc3SrcPath
@@ -596,8 +624,14 @@ class Browser {
     if (kc3) {
       console.log('KC3Kai loaded! ID: ', kc3.id)
   
+      if (!!this.currentKc3ExtensionId) {
+        win.tabs.removeExtensionTabs(this.currentKc3ExtensionId)
+      }
+
       // open KC3 start page
       kc3ExtensionId = kc3.id
+      this.currentKc3ExtensionId = kc3ExtensionId
+
       kc3StartPageUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/game/direct.html'
       let startTab
       if (config.get('kc3kai.startup.openStartPage'))

@@ -56,13 +56,17 @@ class KC3Updater {
 
         console.log(`kc3updater.js: kc3 location ${dir} channel ${channel}`);
 
-        if (!['release', 'master', 'develop'].includes(channel))
+        if (!['release', 'master', 'develop'].includes(channel) && !channel.startsWith('manual'))
             throw new Error(`kc3updater.js: Invalid update channel ${channel}`);
 
         let updateProcess = self.newProcess('KC3 Update');
         try {
 
-            if (channel == 'release') {
+            if (channel.startsWith('manual')) {
+                console.log('kc3updater.js: Using manual update channel; skipping update check.');
+                return;
+            }
+            else if (channel == 'release') {
                 const updateCheckProcess = self.newProcess('Checking for updates');
                 const releaseData = await (await fetch('http://api.github.com/repos/kc3kai/kc3kai/releases/latest')).json();
                 const latestVersion = releaseData.name;
