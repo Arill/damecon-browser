@@ -87,7 +87,7 @@ class WebUI {
               break;
             case 'kc3-doupdate':
             case 'kc3-get-isupdating':
-            case 'kc3-select-manual-location':
+            case 'kc3-select-custom-location':
               result = await ipc.send('webui-message', msg.type);
               break;
             default:

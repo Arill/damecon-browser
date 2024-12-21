@@ -402,7 +402,7 @@ class Browser {
               return;
             }
             const channel = this.kc3UpdatingChannel;
-            if (!channel.startsWith('manual'))
+            if (!channel.startsWith('custom'))
               await config.set('kc3kai.update.time.' + channel, Date.now())
             await this.checkStartKc3(win, kc3Path)
           }
@@ -436,6 +436,10 @@ class Browser {
           else if (data.key === 'window.style.brightness') {
             nativeTheme.themeSource = data.value;
           }
+          else if (data.key.startsWith('kc3kai.custom')) {
+            const kc3Path = this.getKc3Path()
+            await this.checkStartKc3(win, kc3Path)
+          }
           break
         case 'kc3-doupdate':
           await this.updateKc3(config.get('kc3kai.update.channel'))
@@ -443,7 +447,7 @@ class Browser {
         case 'kc3-get-isupdating':
           result = { isUpdating: this.kc3IsUpdating, channel: this.kc3UpdatingChannel }
           break
-        case 'kc3-select-manual-location':
+        case 'kc3-select-custom-location':
           const { canceled, filePaths } = await dialog.showOpenDialog({
             properties: ['openDirectory']
           })
@@ -459,7 +463,7 @@ class Browser {
   getKc3Path() {
     const currentChannel = config.get('kc3kai.update.channel')
     let kc3Path
-    if (currentChannel.startsWith('manual'))
+    if (currentChannel.startsWith('custom'))
       kc3Path = config.get(`kc3kai.${currentChannel}Location`)
     else
       kc3Path = path.join(extensionsPath, 'kc3kai-' + currentChannel)
@@ -469,7 +473,7 @@ class Browser {
   async updateKc3IfScheduled(win) {
     // update if configured schedule warrants it
     const currentChannel = config.get('kc3kai.update.channel')
-    const canUpdate = !currentChannel.startsWith('manual')
+    const canUpdate = !currentChannel.startsWith('custom')
     const lastUpdated = config.get('kc3kai.update.time.' + currentChannel)
     const schedule = config.get('kc3kai.update.schedule')
     const autoUpdate = config.get('kc3kai.update.auto')
@@ -608,10 +612,15 @@ class Browser {
   }
 
   async checkStartKc3 (win, kc3Path) {
-    if (!kc3Path) {
-      console.error('No kc3 path defined.')
-      return;
+    if (!!this.currentKc3ExtensionId) {
+      win.tabs.removeExtensionTabs(this.currentKc3ExtensionId)
     }
+
+    if (!kc3Path) {
+      console.log('No kc3 path defined.')
+      return
+    }
+
     const kc3SrcPath = path.join(kc3Path, 'src')
     if (fsSync.existsSync(kc3SrcPath))
       kc3Path = kc3SrcPath
@@ -624,9 +633,6 @@ class Browser {
     if (kc3) {
       console.log('KC3Kai loaded! ID: ', kc3.id)
   
-      if (!!this.currentKc3ExtensionId) {
-        win.tabs.removeExtensionTabs(this.currentKc3ExtensionId)
-      }
 
       // open KC3 start page
       kc3ExtensionId = kc3.id

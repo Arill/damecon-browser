@@ -115,7 +115,7 @@
           <label for="kc3updatechannel">Update channel</label>
           <select id="kc3updatechannel" class="form-control" data-bind="options: kc3UpdateChannels, value: kc3UpdateChannel, enable: canSetKc3Channel"></select>
         </div>
-        <!-- ko if: !kc3UpdateChannel()?.startsWith('manual') -->
+        <!-- ko if: !kc3UpdateChannel()?.startsWith('custom') -->
         <div class="form-group">
           <label for="kc3updateschedule">Update schedule</label>
           <select id="kc3updateschedule" class="form-control" data-bind="options: kc3UpdateSchedules, value: kc3UpdateSchedule"></select>
@@ -125,20 +125,20 @@
           <label class="form-check-label" for="kc3updatesauto">Download/apply updates automatically</label>
         </div>
         <!-- /ko -->
-        <!-- ko if: kc3UpdateChannel() === 'manual1' -->
+        <!-- ko if: kc3UpdateChannel() === 'custom1' -->
         <div class="form-group">
-          <label for="kc3manual1location">Location</label>
+          <label for="kc3custom1location">Location</label>
           <div class="input-group">
-            <input type="text" id="kc3manual1location" class="form-control" data-bind="value: kc3Manual1Location"/>
+            <input type="text" id="kc3custom1location" class="form-control" data-bind="value: kc3Custom1Location"/>
             <button type="button" class="btn btn-secondary" data-bind="click: getKc3Location">Browse</button>
           </div>
         </div>
         <!-- /ko -->
-        <!-- ko if: kc3UpdateChannel() === 'manual2' -->
+        <!-- ko if: kc3UpdateChannel() === 'custom2' -->
         <div class="form-group">
-          <label for="kc3manual2location">Location</label>
+          <label for="kc3custom2location">Location</label>
           <div class="input-group">
-            <input type="text" id="kc3manual2location" class="form-control" data-bind="value: kc3Manual2Location"/>
+            <input type="text" id="kc3custom2location" class="form-control" data-bind="value: kc3Custom2Location"/>
             <button type="button" class="btn btn-secondary" data-bind="click: getKc3Location">Browse</button>
           </div>
         </div>
