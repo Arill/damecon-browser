@@ -56,14 +56,14 @@ class KC3Updater {
 
         console.log(`kc3updater.js: kc3 location ${dir} channel ${channel}`);
 
-        if (!['release', 'master', 'develop'].includes(channel) && !channel.startsWith('manual'))
+        if (!['release', 'master', 'develop'].includes(channel) && !channel.startsWith('custom'))
             throw new Error(`kc3updater.js: Invalid update channel ${channel}`);
 
         let updateProcess = self.newProcess('KC3 Update');
         try {
 
-            if (channel.startsWith('manual')) {
-                console.log('kc3updater.js: Using manual update channel; skipping update check.');
+            if (channel.startsWith('custom')) {
+                console.log('kc3updater.js: Using custom update channel; skipping update check.');
                 return;
             }
             else if (channel == 'release') {

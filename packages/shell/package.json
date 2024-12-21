@@ -1,6 +1,6 @@
 {
   "name": "damecon-browser",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A minimal browser designed for playing Kantai Collection via KC3Kai.",
   "main": "index.js",
   "scripts": {

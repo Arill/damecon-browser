@@ -145,7 +145,13 @@
         <!-- /ko -->
       </div>
       <div class="form-group">
-        <button class="btn btn-secondary" type="button" data-bind="click: kc3CheckForUpdates, enable: canUpdateKc3">Check for updates</button>
+        <p>Note: reloading will automatically close any currently-open KC3 tabs.</p>
+        <!-- ko if: !kc3UpdateChannel()?.startsWith('custom') -->
+        <button class="btn btn-secondary" type="button" data-bind="click: kc3CheckForUpdates, enable: canUpdateKc3">Check for updates & reload</button>
+        <!-- /ko -->
+        <!-- ko if: kc3UpdateChannel()?.startsWith('custom') -->
+        <button class="btn btn-secondary" type="button" data-bind="click: kc3CheckForUpdates, enable: canUpdateKc3">Reload</button>
+        <!-- /ko -->
       </div>
     </script>
     <script type="text/html" id="settings-content-2">
