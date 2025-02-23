@@ -71,6 +71,8 @@ class KC3Updater {
                 const releaseData = await (await fetch('http://api.github.com/repos/kc3kai/kc3kai/releases/latest')).json();
                 const latestVersion = releaseData.name;
                 updateCheckProcess.complete();
+                
+                const releaseAsset = releaseData.assets.filter(a => /kc3kai-[\d.]+\.zip/.test(a.name))[0];
 
                 const releaseFile = path.join(dir, 'release');
 
@@ -92,7 +94,7 @@ class KC3Updater {
                         }
                         catch (err) { }
                         fs.mkdirSync(dir);
-                        const zipRes = await fetch(releaseData.assets[0].browser_download_url);
+                        const zipRes = await fetch(releaseAsset.browser_download_url);
                         const zipFilename = 'kc3kai-release-' + latestVersion + '.zip';
                         const zipFilePath = path.join(dir, zipFilename);
                         const stream = fs.createWriteStream(zipFilePath, { flags: 'wx' });
