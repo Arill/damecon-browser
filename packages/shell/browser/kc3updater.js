@@ -72,7 +72,7 @@ class KC3Updater {
                 const latestVersion = releaseData.name;
                 updateCheckProcess.complete();
                 
-                const releaseAsset = releaseData.assets.filter(a => /kc3kai-[\d.]+\.zip/.test(a.name))[0];
+                const releaseAsset = releaseData.assets.filter(a => /^kc3kai-[\d.]+\.zip$/.test(a.name))[0];
 
                 const releaseFile = path.join(dir, 'release');
 
