@@ -1,6 +1,7 @@
 class WebUI {
   windowId = -1
   activeTabId = -1
+  heldTabId = -1
   tabList = []
   settingsUrl = 'chrome-extension://' + chrome.runtime.id + '/settings.html'
 
@@ -228,6 +229,43 @@ class WebUI {
     })
     tabElem.querySelector('.close').addEventListener('click', () => {
       chrome.tabs.remove(tab.id)
+    })    
+
+    tabElem.addEventListener('mousedown', (event) => {
+      if (event.button === 0) {
+        chrome.tabs.update(tab.id, { active: true })
+        this.heldTabId = tab.id
+        //Sometime can be revisited to add an elegant solution for sticky tabs, for now adding this condition to not drag the first tab which is the settings menu
+        if (tab.id == 2)
+          this.heldTabId = -1
+      }
+
+      if (event.button === 1) chrome.tabs.remove(tab.id)
+    })
+
+    window.addEventListener('mousemove', (event) => {
+      if (this.heldTabId != -1) {
+        var tab = this.$.tabList.querySelector(`[data-tab-id="${this.heldTabId}"]`)
+        var startingPos = tab.offsetLeft
+        var width = tab.offsetWidth
+        //Drag and drop offsets, this feels "nice" but could be done better I thing
+        var toMoveRight = startingPos + width * 1.15
+        var toMoveLeft = startingPos - width * 0.15
+        if (event.clientX > toMoveRight && tab.nextSibling !== null) {
+          if (tab.nextSibling.nextSibling === null) //Sending to last place
+            this.$.tabList.appendChild(tab)
+          else
+            this.$.tabList.insertBefore(tab, tab.nextSibling.nextSibling)
+        }
+        if (event.clientX < toMoveLeft && (tab.previousSibling !== null)) {
+          if (tab.previousSibling.offsetLeft != -2) //Same deal here for sticky tabs
+            this.$.tabList.insertBefore(tab, tab.previousSibling)
+        }
+      }
+    })
+
+    window.addEventListener('mouseup', (event) => {
+      if (event.button === 0) this.heldTabId = -1
     })
 
     this.$.tabList.appendChild(tabElem)
