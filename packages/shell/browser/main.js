@@ -2,7 +2,7 @@ const path = require('path')
 const fsSync = require('fs')
 const url = require('url')
 const fs = fsSync.promises
-const { app, session, BrowserWindow, globalShortcut, ipcMain, nativeTheme, dialog } = require('electron')
+const { app, session, BrowserWindow, Notification, globalShortcut, ipcMain, nativeTheme, dialog } = require('electron')
 const ConfigStore = require('configstore')
 
 const { Tabs } = require('./tabs')
@@ -31,6 +31,7 @@ const defaultConfig = {
     },
     startup: {
       openStartPage: true,
+      openDMMPage: false,
       openDevtools: true,
       openStratRoom: true
     }
@@ -66,6 +67,7 @@ if (process.execPath.match(/(damecon(-browser)?|chrome)/)) {
 let webuiExtensionId
 let kc3ExtensionId
 let kc3StartPageUrl
+let DMMPageUrl
 let newTabUrl
 let settingsUrl
 const manifestExists = async (dirPath) => {
@@ -156,8 +158,6 @@ class TabbedBrowserWindow {
     if (process.env.SHELL_DEBUG) {
       this.webContents.openDevTools({mode: 'detach'})
     }
-
-    
     
     this.tabs = new Tabs(this.window, { newTabPageUrl: newTabUrl, hideAddressBarFor: options.hideAddressBarFor })
 
@@ -169,7 +169,7 @@ class TabbedBrowserWindow {
     })
 
     this.tabs.on('tab-navigated', function onTabNavigated(tab, tabUrl) {
-      if (tabUrl === kc3StartPageUrl && config.get('kc3kai.startup.openDevtools')) {
+      if ((tabUrl === kc3StartPageUrl || tabUrl === DMMPageUrl) && config.get('kc3kai.startup.openDevtools')) {
         tab.webContents.openDevTools({activate: true })
       }
     })
@@ -318,7 +318,6 @@ class Browser {
         }
 
         const tab = win.tabs.create()
-
 
         if (details.url) tab.loadURL(details.url || newTabUrl)
         if (typeof details.active === 'boolean' ? details.active : true) win.tabs.select(tab.id)
@@ -571,8 +570,9 @@ class Browser {
             const win = this.getWindowFromWebContents(webContents)
             if (!win) return;
             const tab = win.tabs.create()
+            let ogurl = details.url
             tab.loadURL(details.url)
-            if (details.url == kc3StartPageUrl && config.get('kc3kai.startup.openDevtools')) {
+            if ((details.url == kc3StartPageUrl || ogurl == DMMPageUrl) && config.get('kc3kai.startup.openDevtools')) {
               tab.webContents.openDevTools({activate: true });
             }
           })
@@ -605,6 +605,32 @@ class Browser {
 
       menu.popup()
     })
+
+    webContents.on('will-prevent-unload', (event) => {
+      const win = this.getWindowFromWebContents(webContents)
+      const choice = dialog.showMessageBoxSync({
+        type: 'question',
+        buttons: ['Leave', 'Stay'],
+        title: 'Do you want to leave this site?',
+        message: 'Changes you made may not be saved.',
+        defaultId: 0,
+        cancelId: 1
+      })
+      const leave = (choice === 0)
+      if (leave) {
+        event.preventDefault()
+      }
+    })   
+
+    webContents.on("zoom-changed", (event, zoomDirection) => {
+        var currentZoom = webContents.getZoomFactor();
+        if (zoomDirection === "in") {
+          webContents.zoomFactor = currentZoom + 0.2;
+        }
+        if (zoomDirection === "out") {          
+          webContents.zoomFactor = currentZoom - 0.2;
+        }
+    })
   }
 
   async updateKc3 (channel) {
@@ -633,15 +659,21 @@ class Browser {
     if (kc3) {
       console.log('KC3Kai loaded! ID: ', kc3.id)
   
-
       // open KC3 start page
       kc3ExtensionId = kc3.id
       this.currentKc3ExtensionId = kc3ExtensionId
 
       kc3StartPageUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/game/direct.html'
+      DMMPageUrl = 'http://www.dmm.com/netgame/social/-/gadgets/=/app_id=854854/'
       let startTab
-      if (config.get('kc3kai.startup.openStartPage'))
-        startTab = win.tabs.create({ initialUrl: kc3StartPageUrl })
+      
+      if (config.get('kc3kai.startup.openDMMPage')) {
+        startTab = win.tabs.create({ initialUrl: DMMPageUrl })
+      }
+      else {
+        if (config.get('kc3kai.startup.openStartPage'))
+          startTab = win.tabs.create({ initialUrl: kc3StartPageUrl })
+      }
       
       const kc3StratRoomUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/strategy/strategy.html'
       if (config.get('kc3kai.startup.openStratRoom')) {
@@ -653,7 +685,6 @@ class Browser {
         win.tabs.select(startTab.id)
     }
   }
-
 }
 
 module.exports = Browser

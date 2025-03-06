@@ -70,6 +70,7 @@ this.viewModel = function() {
             'kc3UpdateSchedule': 'kc3kai.update.schedule',
             'kc3UpdateAuto': 'kc3kai.update.auto',
             'kc3OpenStartPage': 'kc3kai.startup.openStartPage',
+            'kc3OpenDMMPage': 'kc3kai.startup.openDMMPage',
             'kc3OpenDevtools': 'kc3kai.startup.openDevtools',
             'kc3OpenStratRoom': 'kc3kai.startup.openStratRoom'
         },
