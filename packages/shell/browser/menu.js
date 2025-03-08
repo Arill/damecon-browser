@@ -6,6 +6,9 @@ const setupMenu = (browser) => {
   const tab = () => browser.getFocusedWindow().getFocusedTab()
   const tabWc = () => tab().webContents
 
+  // this menu is never actually visible but we can easily shove shortcuts here so hey
+  // though realistically if we're gonna support the wider set of shortcuts
+  // we probably should get away from using this
   const template = [
     ...(isMac ? [{ role: 'appMenu' }] : []),
     { role: 'fileMenu' },
@@ -24,10 +27,16 @@ const setupMenu = (browser) => {
           accelerator: 'F5',
           nonNativeMacOSRole: true,
           click: () => tabWc().reload(),
-        },        
+        },
         {
           label: 'Close Tab',
           accelerator: 'CmdOrCtrl+F4',
+          nonNativeMacOSRole: true,
+          click: () => tab().destroy(),
+        },
+        {
+          label: 'Close Tab2',
+          accelerator: 'CmdOrCtrl+W',
           nonNativeMacOSRole: true,
           click: () => tab().destroy(),
         },
@@ -44,7 +53,7 @@ const setupMenu = (browser) => {
           click: () => tabWc().toggleDevTools(),
         },
         {
-          label: 'Toggle Developer Tool asdf',
+          label: 'Open devtools2',
           accelerator: isMac ? 'Alt+Command+I' : 'Ctrl+Shift+I',
           nonNativeMacOSRole: true,
           click: () => tabWc().toggleDevTools(),
